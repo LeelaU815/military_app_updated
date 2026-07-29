@@ -38,7 +38,7 @@ const AREAS = [
     { id: "nf4", baseId: "norfolk", name: "Ocean View (Norfolk)", lat: 36.941, lng: -76.253 },
 ];
 
-// 4. These are the schools per area
+// 4. These are the schools per area -- look in website for what special needs help they offer
 const SCHOOLS = [
     { id: "s11", baseId: "norfolk", name: "Maury High School", type: "public", lat: 36.863, lng: -76.295, grades: "9-12", categories: ["sld", "ohi", "sli", "ed"], notes: "Norfolk Public Schools special education services." },
     { id: "s12", baseId: "norfolk", name: "Norfolk Collegiate", type: "private", lat: 36.88, lng: -76.26, grades: "K-12", categories: ["sld"], notes: "Academic support center." },
