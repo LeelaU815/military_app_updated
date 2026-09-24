@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUser, loadProfile } from './storage';
-import { MONTH_NAMES, installationName, disabilityLabel } from './constants';
+import { MONTH_NAMES, installationName, disabilityLabel, displayAge } from './constants';
 import { COLORS } from './theme';
 
 const QUICK_ACTIONS = [
@@ -42,7 +42,7 @@ export default function DashboardScreen({ navigation }) {
         setLoading(false);
         return;
       }
-      setProfile(await loadProfile(currentUser.email));
+      setProfile(await loadProfile(currentUser.uid));
     } catch (error) {
       console.log(error);
     } finally {
@@ -72,16 +72,22 @@ export default function DashboardScreen({ navigation }) {
     );
   }
 
-  if (!profile) {
+  // No profile yet, or they saved one partway through.
+  if (!profile || profile.status === 'draft') {
+    const isDraft = !!profile;
     return (
       <View style={styles.emptyState}>
         <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.subtitle}>You haven't created a profile yet.</Text>
+        <Text style={styles.subtitle}>
+          {isDraft
+            ? 'Your profile is saved partway. Finish it to see your dashboard.'
+            : "You haven't created a profile yet."}
+        </Text>
         <TouchableOpacity
           style={styles.createButton}
           onPress={() => navigation.navigate('ProfileCreation')}
         >
-          <Text style={styles.createButtonText}>Create Profile</Text>
+          <Text style={styles.createButtonText}>{isDraft ? 'Finish Profile' : 'Create Profile'}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -166,7 +172,7 @@ export default function DashboardScreen({ navigation }) {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Family member</Text>
             <Text style={styles.summaryValue}>
-              {profile.name}{profile.age ? ` · Age ${profile.age}` : ''}
+              {profile.name}{displayAge(profile) ? ` · Age ${displayAge(profile)}` : ''}
             </Text>
           </View>
           <View style={styles.summaryRow}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { getCurrentUser, saveProfile } from './storage';
+import { getCurrentUser, loadProfile, saveProfile } from './storage';
 import {
   GENDERS,
   DISABILITY_OPTIONS,
@@ -23,6 +23,10 @@ import {
   DOB_YEARS,
   FUTURE_YEARS,
   isOther,
+  priorityIds,
+  ageFromDob,
+  validateStep,
+  PROFILE_STEPS,
 } from './constants';
 
 import WheelDatePicker from './components/WheelDatePicker';
@@ -32,7 +36,7 @@ import Dropdown from './components/Dropdown';
 import DraggableRankList from './components/DraggableRankList';
 import { COLORS } from './theme';
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = PROFILE_STEPS;
 const STEP_TITLES = [
   'Basic Info',
   'Care Needs',
@@ -41,86 +45,84 @@ const STEP_TITLES = [
   'PCS & Installation',
 ];
 
+const EMPTY_PROFILE = {
+  familyLastName: '',
+  name: '',
+  dobMonth: null, dobDay: null, dobYear: null,
+  gender: '', genderOther: '',
+  disabilityType: '', disabilityOther: '',
+  efmpStatus: '',
+  iepImportance: 0,
+  respiteImportance: 0,
+  insurance: '',
+  residentialDecided: '',
+  address: '', city: '', state: '', zip: '',
+  priorityOrder: null,
+  notifications: '',
+  pcsDateType: '',
+  pcsMonth: null, pcsDay: null, pcsYear: null,
+  pcsStartMonth: null, pcsStartDay: null, pcsStartYear: null,
+  pcsEndMonth: null, pcsEndDay: null, pcsEndYear: null,
+  installation: '',
+};
+
 export default function ProfileCreationScreen({ navigation }) {
   const [step, setStep] = useState(1);
-  const [data, setData] = useState({
-    familyLastName: '',
-    name: '',
-    age: '',
-    dobMonth: null, dobDay: null, dobYear: null,
-    gender: '', genderOther: '',
-    disabilityType: '', disabilityOther: '',
-    efmpStatus: '',
-    iepImportance: 0,
-    respiteImportance: 0,
-    insurance: '',
-    residentialDecided: '',
-    address: '', city: '', state: '', zip: '',
-    priorityOrder: null,
-    notifications: '',
-    pcsDateType: '',
-    pcsMonth: null, pcsDay: null, pcsYear: null,
-    pcsStartMonth: null, pcsStartDay: null, pcsStartYear: null,
-    pcsEndMonth: null, pcsEndDay: null, pcsEndYear: null,
-    installation: '',
-  });
+  const [data, setData] = useState(EMPTY_PROFILE);
+  const [uid, setUid] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Pick up where they left off if they saved a draft earlier.
+  useEffect(() => {
+    (async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!user) return;
+        setUid(user.uid);
+        const saved = await loadProfile(user.uid);
+        if (saved && saved.status === 'draft') {
+          setData({ ...EMPTY_PROFILE, ...saved });
+          setStep(saved.draftStep || 1);
+        }
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   const update = (field, value) => setData((prev) => ({ ...prev, [field]: value }));
 
-  const priorityItems = getPriorityItems(data.residentialDecided);
+  const priorityItems = getPriorityItems(data.residentialDecided, data.priorityOrder);
+  const age = ageFromDob(data.dobMonth, data.dobDay, data.dobYear);
 
-  const canGoNext = () => {
-    switch (step) {
-      case 1:
-        return (
-          data.familyLastName.trim().length > 0 &&
-          data.name.trim().length > 0 &&
-          data.age.trim().length > 0 &&
-          !!(data.dobMonth && data.dobDay && data.dobYear) &&
-          data.gender.length > 0 &&
-          (data.gender !== 'Self-describe' || data.genderOther.trim().length > 0)
-        );
-      case 2:
-        return (
-          data.disabilityType.length > 0 &&
-          (!isOther(data.disabilityType) || data.disabilityOther.trim().length > 0) &&
-          data.efmpStatus.length > 0 &&
-          data.iepImportance > 0 &&
-          data.respiteImportance > 0
-        );
-      case 3:
-        if (data.insurance.length === 0) return false;
-        if (data.residentialDecided === 'Yes') {
-          return data.address.trim().length > 0 && data.zip.trim().length > 0;
-        }
-        return data.residentialDecided.length > 0;
-      case 4:
-        return true;
-      case 5:
-        if (data.notifications.length === 0) return false;
-        if (data.pcsDateType === 'Date') {
-          if (!(data.pcsMonth && data.pcsDay && data.pcsYear)) return false;
-        } else if (data.pcsDateType === 'Timeframe') {
-          if (!(data.pcsStartMonth && data.pcsStartDay && data.pcsStartYear &&
-                data.pcsEndMonth && data.pcsEndDay && data.pcsEndYear)) return false;
-        } else if (data.pcsDateType !== 'Not sure') {
-          return false;
-        }
-        return data.installation.length > 0;
-      default:
-        return true;
-    }
-  };
+  const saveDraft = (draftStep) =>
+    saveProfile(uid, { ...data, status: 'draft', draftStep });
 
   const handleNext = () => {
-    if (!canGoNext()) {
-      Alert.alert('Hold on', 'Please fill in this section before continuing.');
+    const error = validateStep(data, step);
+    if (error) {
+      Alert.alert('Hold on', error);
       return;
     }
     if (step < TOTAL_STEPS) {
       setStep(step + 1);
+      // Quietly keep a draft so nothing is lost if the app closes.
+      saveDraft(step + 1).catch((e) => console.log(e));
     } else {
       handleFinish();
+    }
+  };
+
+  const handleSaveForLater = async () => {
+    try {
+      await saveDraft(step);
+      Alert.alert('Saved', 'Your profile is saved. You can finish it from the Home tab.');
+      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
+    } catch (error) {
+      Alert.alert('Error', 'Something went wrong saving your profile.');
+      console.log(error);
     }
   };
 
@@ -134,10 +136,13 @@ export default function ProfileCreationScreen({ navigation }) {
 
   const handleFinish = async () => {
     try {
-      const currentUser = await getCurrentUser();
-      const email = currentUser ? currentUser.email : 'unknown';
-
-      await saveProfile(email, data);
+      // Save the ranking even if they never dragged anything (the default order is still a ranking).
+      const { draftStep, ...profile } = data;
+      await saveProfile(uid, {
+        ...profile,
+        priorityOrder: priorityIds(data.residentialDecided, data.priorityOrder),
+        status: 'complete',
+      });
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (error) {
       Alert.alert('Error', 'Something went wrong saving your profile.');
@@ -150,7 +155,7 @@ export default function ProfileCreationScreen({ navigation }) {
       case 1:
         return (
           <>
-            <Text style={styles.fieldLabel}>Family last name</Text>
+            <Question number={1}>Family last name</Question>
             <TextInput
               style={styles.input}
               placeholder="e.g. Reynolds"
@@ -159,7 +164,7 @@ export default function ProfileCreationScreen({ navigation }) {
               onChangeText={(t) => update('familyLastName', t)}
             />
 
-            <Text style={styles.fieldLabel}>Family member name</Text>
+            <Question number={2}>Family member name</Question>
             <TextInput
               style={styles.input}
               placeholder="e.g. Mia Reynolds"
@@ -168,17 +173,7 @@ export default function ProfileCreationScreen({ navigation }) {
               onChangeText={(t) => update('name', t)}
             />
 
-            <Text style={styles.fieldLabel}>Age</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="9"
-              placeholderTextColor={COLORS.placeholder}
-              value={data.age}
-              onChangeText={(t) => update('age', t.replace(/[^0-9]/g, ''))}
-              keyboardType="number-pad"
-            />
-
-            <Text style={styles.fieldLabel}>Date of birth</Text>
+            <Question number={3}>Date of birth</Question>
             <WheelDatePicker
               month={data.dobMonth}
               day={data.dobDay}
@@ -188,8 +183,9 @@ export default function ProfileCreationScreen({ navigation }) {
               onChangeYear={(v) => update('dobYear', v)}
               yearRange={DOB_YEARS}
             />
+            {age !== null && <Text style={[styles.helperText, { marginTop: 6 }]}>Age {age}</Text>}
 
-            <Text style={styles.fieldLabel}>Gender</Text>
+            <Question number={4}>Gender</Question>
             <Dropdown
               value={data.gender}
               onChange={(v) => update('gender', v)}
@@ -210,7 +206,7 @@ export default function ProfileCreationScreen({ navigation }) {
       case 2:
         return (
           <>
-            <Text style={styles.fieldLabel}>Disability category</Text>
+            <Question number={5}>Disability category</Question>
             <Dropdown
               value={data.disabilityType}
               onChange={(v) => update('disabilityType', v)}
@@ -227,18 +223,18 @@ export default function ProfileCreationScreen({ navigation }) {
               />
             )}
 
-            <Text style={styles.fieldLabel}>EFMP status</Text>
+            <Question number={6}>EFMP status</Question>
             <ChoiceRow options={EFMP_OPTIONS} selected={data.efmpStatus} onSelect={(v) => update('efmpStatus', v)} />
 
-            <Text style={styles.fieldLabel}>
+            <Question number={7}>
               How important is it for your school to have IEP / 504 accommodations?
-            </Text>
+            </Question>
             <Text style={styles.helperText}>1 = irrelevant, 5 = necessary</Text>
             <ScaleSelector value={data.iepImportance} onSelect={(v) => update('iepImportance', v)} />
 
-            <Text style={[styles.fieldLabel, { marginTop: 20 }]}>
+            <Question number={8} style={{ marginTop: 20 }}>
               How important is it to have respite caregiver and support?
-            </Text>
+            </Question>
             <Text style={styles.helperText}>1 = irrelevant, 5 = necessary</Text>
             <ScaleSelector value={data.respiteImportance} onSelect={(v) => update('respiteImportance', v)} />
           </>
@@ -246,10 +242,10 @@ export default function ProfileCreationScreen({ navigation }) {
       case 3:
         return (
           <>
-            <Text style={styles.fieldLabel}>What insurance do you have?</Text>
+            <Question number={9}>What TRICARE plan do you have?</Question>
             <ChoiceRow options={INSURANCE_OPTIONS} selected={data.insurance} onSelect={(v) => update('insurance', v)} />
 
-            <Text style={styles.fieldLabel}>Have you already decided on your residential area?</Text>
+            <Question number={10}>Have you already decided on your residential area?</Question>
             <ChoiceRow options={['Yes', 'No']} selected={data.residentialDecided} onSelect={(v) => update('residentialDecided', v)} />
 
             {data.residentialDecided === 'Yes' && (
@@ -295,9 +291,10 @@ export default function ProfileCreationScreen({ navigation }) {
       case 4:
         return (
           <>
-            <Text style={styles.fieldLabel}>When finding resources, rank your priorities</Text>
+            <Question number={11}>When finding resources, rank your priorities</Question>
             <Text style={styles.helperText}>Press and drag to reorder, top = most important.</Text>
             <DraggableRankList
+              key={data.residentialDecided}
               items={priorityItems}
               onReorder={(order) => update('priorityOrder', order)}
             />
@@ -306,13 +303,13 @@ export default function ProfileCreationScreen({ navigation }) {
       case 5:
         return (
           <>
-            <Text style={styles.fieldLabel}>
+            <Question number={12}>
               Receive notifications for status updates and deadlines?
-            </Text>
+            </Question>
             <Text style={styles.helperText}>Highly recommended — changeable anytime in settings.</Text>
             <ChoiceRow options={['Yes', 'No']} selected={data.notifications} onSelect={(v) => update('notifications', v)} />
 
-            <Text style={styles.fieldLabel}>When is your estimated PCS date?</Text>
+            <Question number={13}>When is your estimated PCS date?</Question>
             <ChoiceRow options={['Date', 'Timeframe', 'Not sure']} selected={data.pcsDateType} onSelect={(v) => update('pcsDateType', v)} />
 
             {data.pcsDateType === 'Date' && (
@@ -353,9 +350,9 @@ export default function ProfileCreationScreen({ navigation }) {
               </View>
             )}
 
-            <Text style={styles.fieldLabel}>
+            <Question number={14}>
               Which military installation will you (or your spouse) be employed at?
-            </Text>
+            </Question>
             <Dropdown
               value={data.installation}
               onChange={(v) => update('installation', v)}
@@ -369,6 +366,14 @@ export default function ProfileCreationScreen({ navigation }) {
     }
   };
 
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centered]}>
+        <Text style={styles.helperText}>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -378,6 +383,9 @@ export default function ProfileCreationScreen({ navigation }) {
         <View style={styles.badgeRow}>
           <Ionicons name="compass-outline" size={18} color={COLORS.gold} />
           <Text style={styles.badgeText}>PCS Compass</Text>
+          <TouchableOpacity style={styles.saveLater} onPress={handleSaveForLater}>
+            <Text style={styles.saveLaterText}>Save & finish later</Text>
+          </TouchableOpacity>
         </View>
         <Text style={styles.headerTitle}>Let's build your family profile</Text>
         <Text style={styles.headerSubtitle}>
@@ -411,10 +419,37 @@ export default function ProfileCreationScreen({ navigation }) {
   );
 }
 
+// Question label with its number, e.g. "5. Disability category".
+function Question({ number, style, children }) {
+  return (
+    <Text style={[styles.fieldLabel, style]}>
+      <Text style={styles.questionNumber}>{number}. </Text>
+      {children}
+    </Text>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  saveLater: {
+    marginLeft: 'auto',
+  },
+  saveLaterText: {
+    color: COLORS.white,
+    fontSize: 13,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  questionNumber: {
+    color: COLORS.primary,
+    fontWeight: '700',
   },
   header: {
     paddingTop: 56,

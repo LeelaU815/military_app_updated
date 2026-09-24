@@ -9,12 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { loadUsers, setCurrentUser } from './storage';
+import { logIn, resetPassword, authErrorMessage } from './storage';
 import { COLORS } from './theme';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -22,24 +23,28 @@ export default function LoginScreen({ navigation }) {
       return;
     }
 
+    setSubmitting(true);
     try {
-      const existingUsers = await loadUsers();
-
-      const matchedUser = existingUsers.find(
-        (user) =>
-          user.email.toLowerCase() === email.trim().toLowerCase() &&
-          user.password === password
-      );
-
-      if (!matchedUser) {
-        Alert.alert('Login failed', 'Email or password is incorrect.');
-        return;
-      }
-
-      await setCurrentUser(matchedUser);
-      navigation.navigate('MainTabs');
+      await logIn(email, password);
+      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong logging in.');
+      Alert.alert('Login failed', authErrorMessage(error));
+      console.log(error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      Alert.alert('Enter your email', 'Type your email above, then tap "Forgot password?" again.');
+      return;
+    }
+    try {
+      await resetPassword(email);
+      Alert.alert('Check your email', 'We sent a link to reset your password.');
+    } catch (error) {
+      Alert.alert("Couldn't send reset email", authErrorMessage(error));
       console.log(error);
     }
   };
@@ -70,8 +75,12 @@ export default function LoginScreen({ navigation }) {
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Log In</Text>
+      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={submitting}>
+        <Text style={styles.buttonText}>{submitting ? 'Logging in...' : 'Log In'}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={handleForgotPassword}>
+        <Text style={styles.backText}>Forgot password?</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.goBack()}>

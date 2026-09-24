@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { getCurrentUser, loadProfile, saveProfile } from './storage';
+import { getCurrentUser, loadProfile, saveProfile, logOut } from './storage';
 import {
   GENDERS,
   INSURANCE_OPTIONS,
@@ -25,6 +25,10 @@ import {
   isOther,
   disabilityLabel,
   installationName,
+  priorityIds,
+  displayAge,
+  ageFromDob,
+  validateProfile,
 } from './constants';
 
 import WheelDatePicker from './components/WheelDatePicker';
@@ -40,7 +44,7 @@ function formatDate(month, day, year) {
 }
 
 export default function ProfileScreen({ navigation }) {
-  const [email, setEmail] = useState(null);
+  const [uid, setUid] = useState(null);
   const [savedData, setSavedData] = useState(null);
   const [draftData, setDraftData] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -53,8 +57,8 @@ export default function ProfileScreen({ navigation }) {
         setLoading(false);
         return;
       }
-      setEmail(currentUser.email);
-      const profile = await loadProfile(currentUser.email);
+      setUid(currentUser.uid);
+      const profile = await loadProfile(currentUser.uid);
       setSavedData(profile);
       setDraftData(profile);
     } catch (error) {
@@ -73,7 +77,7 @@ export default function ProfileScreen({ navigation }) {
 
   const update = (field, value) => setDraftData((prev) => ({ ...prev, [field]: value }));
 
-  const priorityItems = draftData ? getPriorityItems(draftData.residentialDecided) : [];
+  const priorityItems = draftData ? getPriorityItems(draftData.residentialDecided, draftData.priorityOrder) : [];
 
   const handleEdit = () => {
     setDraftData(savedData);
@@ -86,15 +90,40 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handleSave = async () => {
+    const error = validateProfile(draftData);
+    if (error) {
+      Alert.alert('Hold on', error);
+      return;
+    }
+    const { draftStep, updatedAt, ...rest } = draftData;
+    const profile = {
+      ...rest,
+      priorityOrder: priorityIds(draftData.residentialDecided, draftData.priorityOrder),
+      status: 'complete',
+    };
     try {
-      await saveProfile(email, draftData);
-      setSavedData(draftData);
+      await saveProfile(uid, profile);
+      setSavedData(profile);
       setEditMode(false);
       Alert.alert('Saved', 'Profile updated.');
     } catch (error) {
       Alert.alert('Error', 'Something went wrong saving your profile.');
       console.log(error);
     }
+  };
+
+  const handleLogOut = () => {
+    Alert.alert('Log out?', 'You can log back in any time.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          await logOut();
+          navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+        },
+      },
+    ]);
   };
 
   const Row = ({ label, value }) => (
@@ -156,7 +185,7 @@ export default function ProfileScreen({ navigation }) {
           <>
             <Row label="Family last name" value={savedData.familyLastName} />
             <Row label="Name" value={savedData.name} />
-            <Row label="Age" value={savedData.age} />
+            <Row label="Age" value={displayAge(savedData)} />
             <Row label="Date of birth" value={formatDate(savedData.dobMonth, savedData.dobDay, savedData.dobYear)} />
             <Row
               label="Disability category"
@@ -173,13 +202,19 @@ export default function ProfileScreen({ navigation }) {
             />
             <Row
               label="Priority ranking"
-              value={(savedData.priorityOrder || []).map((id) => PRIORITY_LABELS[id]).join(', ')}
+              value={priorityIds(savedData.residentialDecided, savedData.priorityOrder)
+                .map((id, i) => `${i + 1}. ${PRIORITY_LABELS[id]}`)
+                .join('\n')}
             />
             <Row label="IEP / 504 importance" value={savedData.iepImportance ? `${savedData.iepImportance} / 5` : null} />
             <Row label="Respite support importance" value={savedData.respiteImportance ? `${savedData.respiteImportance} / 5` : null} />
             <Row label="Notifications" value={savedData.notifications} />
             <Row label="Estimated PCS date" value={pcsDateText} />
             <Row label="Installation" value={installationName(savedData.installation)} />
+
+            <TouchableOpacity style={styles.logOutButton} onPress={handleLogOut}>
+              <Text style={styles.logOutButtonText}>Log out</Text>
+            </TouchableOpacity>
           </>
         ) : (
           <>
@@ -199,15 +234,6 @@ export default function ProfileScreen({ navigation }) {
               placeholderTextColor={COLORS.textOnDark}
             />
 
-            <Text style={styles.fieldLabel}>Age</Text>
-            <TextInput
-              style={styles.input}
-              value={draftData.age}
-              onChangeText={(t) => update('age', t.replace(/[^0-9]/g, ''))}
-              keyboardType="number-pad"
-              placeholderTextColor={COLORS.textOnDark}
-            />
-
             <Text style={styles.fieldLabel}>Date of birth</Text>
             <WheelDatePicker
               month={draftData.dobMonth}
@@ -218,6 +244,11 @@ export default function ProfileScreen({ navigation }) {
               onChangeYear={(v) => update('dobYear', v)}
               yearRange={DOB_YEARS}
             />
+            {ageFromDob(draftData.dobMonth, draftData.dobDay, draftData.dobYear) !== null && (
+              <Text style={[styles.helperText, { marginTop: 6 }]}>
+                Age {ageFromDob(draftData.dobMonth, draftData.dobDay, draftData.dobYear)}
+              </Text>
+            )}
 
             <Text style={styles.fieldLabel}>Disability category</Text>
             <Dropdown
@@ -293,6 +324,7 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.fieldLabel}>Priority ranking</Text>
             <Text style={styles.helperText}>Press and drag to reorder, top = most important.</Text>
             <DraggableRankList
+              key={draftData.residentialDecided}
               items={priorityItems}
               onReorder={(order) => update('priorityOrder', order)}
             />
@@ -456,6 +488,19 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: COLORS.navy,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  logOutButton: {
+    marginTop: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: COLORS.navyLight,
+    alignItems: 'center',
+  },
+  logOutButtonText: {
+    color: COLORS.textOnDark,
     fontSize: 16,
     fontWeight: '600',
   },

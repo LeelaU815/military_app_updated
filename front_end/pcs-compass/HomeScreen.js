@@ -1,9 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
+import { getCurrentUser } from './storage';
 import { COLORS } from './theme';
 
 export default function HomeScreen({ navigation }) {
+  const [checking, setChecking] = useState(true);
+
+  // Skip this screen if they're still logged in from last time.
+  useEffect(() => {
+    getCurrentUser()
+      .then((user) => {
+        if (user) navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
+        else setChecking(false);
+      })
+      .catch(() => setChecking(false));
+  }, []);
+
+  if (checking) {
+    return <View style={styles.container} />;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.content}>

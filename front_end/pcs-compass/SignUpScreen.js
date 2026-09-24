@@ -9,13 +9,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { loadUsers, saveUsers, setCurrentUser } from './storage';
+import { signUp, authErrorMessage } from './storage';
 import { COLORS } from './theme';
 
 export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSignUp = async () => {
     // Basic validation
@@ -24,31 +25,21 @@ export default function SignUpScreen({ navigation }) {
       return;
     }
 
+    if (password.length < 6) {
+      Alert.alert('Password too short', 'Passwords need at least 6 characters.');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      // Pull existing users list (or start with an empty array)
-      const existingUsers = await loadUsers();
-
-      // Check if email already used
-      const emailTaken = existingUsers.some(
-        (user) => user.email.toLowerCase() === email.trim().toLowerCase()
-      );
-      if (emailTaken) {
-        Alert.alert('Account exists', 'An account with this email already exists.');
-        return;
-      }
-
-      // Add new user to the list
-      const newUser = { name: name.trim(), email: email.trim(), password };
-      const updatedUsers = [...existingUsers, newUser];
-      await saveUsers(updatedUsers);
-
-      // Track who's currently logged in
-      await setCurrentUser(newUser);
-
-      navigation.navigate('MainTabs');
+      await signUp(name, email, password);
+      // New accounts go straight into building their profile.
+      navigation.reset({ index: 1, routes: [{ name: 'MainTabs' }, { name: 'ProfileCreation' }] });
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong saving your account.');
+      Alert.alert("Couldn't create account", authErrorMessage(error));
       console.log(error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -79,15 +70,15 @@ export default function SignUpScreen({ navigation }) {
 
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Password (at least 6 characters)"
         placeholderTextColor={COLORS.textOnDark}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign Up</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSignUp} disabled={submitting}>
+        <Text style={styles.buttonText}>{submitting ? 'Creating account...' : 'Sign Up'}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.goBack()}>
