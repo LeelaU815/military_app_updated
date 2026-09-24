@@ -12,31 +12,20 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUser, loadProfile, saveProfile } from './storage';
+import {
+  GENDERS,
+  INSURANCE_OPTIONS,
+  EFMP_OPTIONS,
+  INSTALLATIONS,
+  PRIORITY_LABELS,
+  getPriorityItems,
+  DOB_YEARS,
+  FUTURE_YEARS,
+} from './constants';
 
 import WheelDatePicker from './components/WheelDatePicker';
 import DraggableRankList from './components/DraggableRankList';
-
-const GENDERS = ['Male', 'Female', 'Prefer not to say', 'Self-describe'];
-const INSURANCE_OPTIONS = ['Prime', 'Select'];
-const EFMP_OPTIONS = ['Enrolled', 'Pending', 'Not Enrolled'];
-const INSTALLATIONS = [
-  'Norfolk', 'Little Creek', 'Oceana', 'Dam Neck', 'Yorktown',
-  'Portsmouth', 'Pentagon', 'Quantico', 'Other',
-];
-
-const PRIORITY_LABELS = {
-  cost: 'Cost (insurance coverage)',
-  quality: 'Quality',
-  reviews: 'Reviews from others',
-  distance: 'Distance from house',
-  availability: 'Availability / Wait times',
-  proximity: 'Proximity to base and MTFs',
-};
-
-const currentYear = new Date().getFullYear();
-const DOB_YEARS = Array.from({ length: 100 }, (_, i) => currentYear - i);
-const FUTURE_YEARS = Array.from({ length: 4 }, (_, i) => currentYear + i);
 
 function formatDate(month, day, year) {
   if (!month || !day || !year) return 'Not set';
@@ -50,17 +39,15 @@ export default function ProfileScreen({ navigation }) {
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async () => {
+  const refreshProfile = async () => {
     try {
-      const currentUserJson = await AsyncStorage.getItem('currentUser');
-      const currentUser = currentUserJson ? JSON.parse(currentUserJson) : null;
+      const currentUser = await getCurrentUser();
       if (!currentUser) {
         setLoading(false);
         return;
       }
       setEmail(currentUser.email);
-      const profileJson = await AsyncStorage.getItem(`profile:${currentUser.email}`);
-      const profile = profileJson ? JSON.parse(profileJson) : null;
+      const profile = await loadProfile(currentUser.email);
       setSavedData(profile);
       setDraftData(profile);
     } catch (error) {
@@ -72,25 +59,14 @@ export default function ProfileScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      loadProfile();
+      refreshProfile();
       setEditMode(false);
     }, [])
   );
 
   const update = (field, value) => setDraftData((prev) => ({ ...prev, [field]: value }));
 
-  const priorityItems = draftData
-    ? [
-        { id: 'cost', label: PRIORITY_LABELS.cost },
-        { id: 'quality', label: PRIORITY_LABELS.quality },
-        { id: 'reviews', label: PRIORITY_LABELS.reviews },
-        ...(draftData.residentialDecided === 'Yes'
-          ? [{ id: 'distance', label: PRIORITY_LABELS.distance }]
-          : []),
-        { id: 'availability', label: PRIORITY_LABELS.availability },
-        { id: 'proximity', label: PRIORITY_LABELS.proximity },
-      ]
-    : [];
+  const priorityItems = draftData ? getPriorityItems(draftData.residentialDecided) : [];
 
   const handleEdit = () => {
     setDraftData(savedData);
@@ -104,7 +80,7 @@ export default function ProfileScreen({ navigation }) {
 
   const handleSave = async () => {
     try {
-      await AsyncStorage.setItem(`profile:${email}`, JSON.stringify(draftData));
+      await saveProfile(email, draftData);
       setSavedData(draftData);
       setEditMode(false);
       Alert.alert('Saved', 'Profile updated.');

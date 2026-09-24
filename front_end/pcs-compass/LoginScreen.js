@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loadUsers, setCurrentUser } from './storage';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -22,8 +22,7 @@ export default function LoginScreen({ navigation }) {
     }
 
     try {
-      const existingUsersJson = await AsyncStorage.getItem('users');
-      const existingUsers = existingUsersJson ? JSON.parse(existingUsersJson) : [];
+      const existingUsers = await loadUsers();
 
       const matchedUser = existingUsers.find(
         (user) =>
@@ -36,7 +35,7 @@ export default function LoginScreen({ navigation }) {
         return;
       }
 
-      await AsyncStorage.setItem('currentUser', JSON.stringify(matchedUser));
+      await setCurrentUser(matchedUser);
       navigation.navigate('MainTabs');
     } catch (error) {
       Alert.alert('Error', 'Something went wrong logging in.');

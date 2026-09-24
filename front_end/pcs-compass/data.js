@@ -1,7 +1,7 @@
 // database for map info, disabilities, etc.
 
 // 1. Create the bases -- update with more bases in the VB area and use GS
-const BASES = [
+export const BASES = [
     {
         id: "norfolk", name: "Naval Station Norfolk, VA",
         lat: 36.950, lng: -76.333,
@@ -14,7 +14,7 @@ const BASES = [
 ];
 
 // 2. Create the categories -- update with more categories as needed -- these are just the federally recognized categories of disabilities for children in the US
-const CATEGORIES = [
+export const CATEGORIES = [
     { id: "sld", label: "Specific Learning Disability (SLD)" },
     { id: "ohi", label: "Other Health Impairment (OHI)" },
     { id: "sli", label: "Speech or Language Impairment" },
@@ -31,7 +31,7 @@ const CATEGORIES = [
 ];
 
 // 3. These are the areas they will live in -- need A LOT per base, but for now just a few to get started.  Each area has an id, a baseId (which base it belongs to), a name, and lat/lng coordinates for the center of the area.  The lat/lng coordinates are used to center the map on that area when the user selects it.  The id is used to link the area to the base and to the schools in that area.  The name is used to display the area name in the UI.
-const AREAS = [
+export const AREAS = [
     { id: "nf1", baseId: "norfolk", name: "Ghent (Norfolk)", lat: 36.862, lng: -76.297 },
     { id: "nf2", baseId: "norfolk", name: "Kempsville (Virginia Beach)", lat: 36.8, lng: -76.17 },
     { id: "nf3", baseId: "norfolk", name: "Greenbrier (Chesapeake)", lat: 36.777, lng: -76.24 },
@@ -39,7 +39,7 @@ const AREAS = [
 ];
 
 // 4. These are the schools per area -- look in website for what special needs help they offer
-const SCHOOLS = [
+export const SCHOOLS = [
     { id: "s11", baseId: "norfolk", name: "Maury High School", type: "public", lat: 36.863, lng: -76.295, grades: "9-12", categories: ["sld", "ohi", "sli", "ed"], notes: "Norfolk Public Schools special education services." },
     { id: "s12", baseId: "norfolk", name: "Norfolk Collegiate", type: "private", lat: 36.88, lng: -76.26, grades: "K-12", categories: ["sld"], notes: "Academic support center." },
     { id: "s13", baseId: "norfolk", name: "Kempsville Elementary", type: "public", lat: 36.803, lng: -76.175, grades: "K-5", categories: ["asd", "dd", "sli", "sld", "oi"], notes: "VB Schools inclusion model; accessible campus." },
@@ -48,7 +48,7 @@ const SCHOOLS = [
 ];
 
 // 5. Providers, the doctors and hospitals and stuff
-const PROVIDERS = [
+export const PROVIDERS = [
     { id: "p11", baseId: "norfolk", name: "Naval Medical Center Portsmouth", kind: "hospital", onBase: true, prime: true, select: true, lat: 36.848, lng: -76.303, categories: ["ohi", "oi", "tbi", "md", "hi", "vi"], notes: "Regional MTF, developmental peds dept." },
     { id: "p12", baseId: "norfolk", name: "CHKD Children's Hospital", kind: "hospital", onBase: false, prime: true, select: true, lat: 36.862, lng: -76.302, categories: ["ohi", "oi", "tbi", "md", "hi", "vi", "db", "asd", "dd"], notes: "Only freestanding children's hospital in Virginia." },
     { id: "p13", baseId: "norfolk", name: "Tidewater Speech & Language", kind: "therapy", onBase: false, prime: false, select: true, lat: 36.8, lng: -76.18, categories: ["sli", "hi", "dd"], notes: "Pediatric speech; AAC evaluations." },
@@ -57,7 +57,7 @@ const PROVIDERS = [
 ];
 
 // 6. These are checklists specific to the area / disability / etc
-const CHECKLISTS = {
+export const CHECKLISTS = {
     everyMove: {
         title: "Every PCS — do these no matter where you live",
         items: [

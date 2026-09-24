@@ -13,7 +13,17 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentUser, saveProfile } from './storage';
+import {
+  GENDERS,
+  DISABILITY_CATEGORIES,
+  INSURANCE_OPTIONS,
+  EFMP_OPTIONS,
+  INSTALLATIONS,
+  getPriorityItems,
+  DOB_YEARS,
+  FUTURE_YEARS,
+} from './constants';
 
 import WheelDatePicker from './components/WheelDatePicker';
 import DraggableRankList from './components/DraggableRankList';
@@ -26,30 +36,6 @@ const STEP_TITLES = [
   'Priorities',
   'PCS & Installation',
 ];
-
-const GENDERS = ['Male', 'Female', 'Prefer not to say', 'Self-describe'];
-const DISABILITY_CATEGORIES = [
-  'Autism Spectrum Disorder (ASD)',
-  'ADHD',
-  'Down Syndrome',
-  'Cerebral Palsy',
-  'Intellectual Disability',
-  'Speech/Language Disorder',
-  'Physical Disability',
-  'Chronic Medical Condition',
-  'Mental Health Condition',
-  'Other',
-];
-const INSURANCE_OPTIONS = ['Prime', 'Select'];
-const EFMP_OPTIONS = ['Enrolled', 'Pending', 'Not Enrolled'];
-const INSTALLATIONS = [
-  'Norfolk', 'Little Creek', 'Oceana', 'Dam Neck', 'Yorktown',
-  'Portsmouth', 'Pentagon', 'Quantico', 'Other',
-];
-
-const currentYear = new Date().getFullYear();
-const DOB_YEARS = Array.from({ length: 100 }, (_, i) => currentYear - i);
-const FUTURE_YEARS = Array.from({ length: 4 }, (_, i) => currentYear + i);
 
 export default function ProfileCreationScreen({ navigation }) {
   const [step, setStep] = useState(1);
@@ -77,16 +63,7 @@ export default function ProfileCreationScreen({ navigation }) {
 
   const update = (field, value) => setData((prev) => ({ ...prev, [field]: value }));
 
-  const priorityItems = [
-    { id: 'cost', label: 'Cost (insurance coverage)' },
-    { id: 'quality', label: 'Quality' },
-    { id: 'reviews', label: 'Reviews from others' },
-    ...(data.residentialDecided === 'Yes'
-      ? [{ id: 'distance', label: 'Distance from house' }]
-      : []),
-    { id: 'availability', label: 'Availability / Wait times' },
-    { id: 'proximity', label: 'Proximity to base and MTFs' },
-  ];
+  const priorityItems = getPriorityItems(data.residentialDecided);
 
   const canGoNext = () => {
     switch (step) {
@@ -153,11 +130,10 @@ export default function ProfileCreationScreen({ navigation }) {
 
   const handleFinish = async () => {
     try {
-      const currentUserJson = await AsyncStorage.getItem('currentUser');
-      const currentUser = currentUserJson ? JSON.parse(currentUserJson) : null;
+      const currentUser = await getCurrentUser();
       const email = currentUser ? currentUser.email : 'unknown';
 
-      await AsyncStorage.setItem(`profile:${email}`, JSON.stringify(data));
+      await saveProfile(email, data);
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (error) {
       Alert.alert('Error', 'Something went wrong saving your profile.');

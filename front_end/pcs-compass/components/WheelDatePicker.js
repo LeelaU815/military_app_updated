@@ -2,10 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
+import { MONTH_NAMES } from '../constants';
 
 function daysInMonth(month, year) {
   if (!month) return 31;
@@ -32,7 +29,7 @@ export default function WheelDatePicker({
         onValueChange={onChangeMonth}
       >
         <Picker.Item label="Month" value={null} color="#A9B7CC" />
-        {MONTHS.map((m, i) => (
+        {MONTH_NAMES.map((m, i) => (
           <Picker.Item key={m} label={m} value={i + 1} color="#000000" />
         ))}
       </Picker>

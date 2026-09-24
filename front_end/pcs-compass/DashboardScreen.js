@@ -3,24 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'rea
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const INSTALLATION_DISPLAY_NAMES = {
-  Norfolk: 'Naval Station Norfolk',
-  'Little Creek': 'Joint Expeditionary Base Little Creek',
-  Oceana: 'Naval Air Station Oceana',
-  'Dam Neck': 'Dam Neck Annex',
-  Yorktown: 'Naval Weapons Station Yorktown',
-  Portsmouth: 'Naval Medical Center Portsmouth',
-  Pentagon: 'The Pentagon',
-  Quantico: 'Marine Corps Base Quantico',
-  Other: 'your new installation',
-};
+import { getCurrentUser, loadProfile } from './storage';
+import { MONTH_NAMES, INSTALLATION_DISPLAY_NAMES } from './constants';
 
 const QUICK_ACTIONS = [
   { key: 'Map', label: 'Map & Discovery', icon: 'map-outline', tab: 'MapTab' },
@@ -49,17 +33,15 @@ export default function DashboardScreen({ navigation }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async () => {
+  const refreshProfile = async () => {
     try {
-      const currentUserJson = await AsyncStorage.getItem('currentUser');
-      const currentUser = currentUserJson ? JSON.parse(currentUserJson) : null;
+      const currentUser = await getCurrentUser();
       if (!currentUser) {
         setProfile(null);
         setLoading(false);
         return;
       }
-      const profileJson = await AsyncStorage.getItem(`profile:${currentUser.email}`);
-      setProfile(profileJson ? JSON.parse(profileJson) : null);
+      setProfile(await loadProfile(currentUser.email));
     } catch (error) {
       console.log(error);
     } finally {
@@ -69,7 +51,7 @@ export default function DashboardScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      loadProfile();
+      refreshProfile();
     }, [])
   );
 

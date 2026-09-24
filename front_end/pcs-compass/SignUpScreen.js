@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { loadUsers, saveUsers, setCurrentUser } from './storage';
 
 export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -25,8 +25,7 @@ export default function SignUpScreen({ navigation }) {
 
     try {
       // Pull existing users list (or start with an empty array)
-      const existingUsersJson = await AsyncStorage.getItem('users');
-      const existingUsers = existingUsersJson ? JSON.parse(existingUsersJson) : [];
+      const existingUsers = await loadUsers();
 
       // Check if email already used
       const emailTaken = existingUsers.some(
@@ -40,10 +39,10 @@ export default function SignUpScreen({ navigation }) {
       // Add new user to the list
       const newUser = { name: name.trim(), email: email.trim(), password };
       const updatedUsers = [...existingUsers, newUser];
-      await AsyncStorage.setItem('users', JSON.stringify(updatedUsers));
+      await saveUsers(updatedUsers);
 
       // Track who's currently logged in
-      await AsyncStorage.setItem('currentUser', JSON.stringify(newUser));
+      await setCurrentUser(newUser);
 
       navigation.navigate('MainTabs');
     } catch (error) {
