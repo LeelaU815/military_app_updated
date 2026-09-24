@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { normalizeProfile } from './constants';
+
 // All AsyncStorage reads/writes go through here.
 // Keys: 'users' (array of accounts), 'currentUser' (who's logged in), 'profile:<email>' (their profile).
 
@@ -23,7 +25,7 @@ export async function setCurrentUser(user) {
 
 export async function loadProfile(email) {
   const json = await AsyncStorage.getItem(`profile:${email}`);
-  return json ? JSON.parse(json) : null;
+  return json ? normalizeProfile(JSON.parse(json)) : null;
 }
 
 export async function saveProfile(email, profile) {

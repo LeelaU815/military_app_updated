@@ -12,6 +12,7 @@ import ProfileScreen from './ProfileScreen';
 import MapScreen from './MapScreen';
 import ContactsScreen from './ContactsScreen';
 import AlertsScreen from './AlertsScreen';
+import { COLORS } from './theme';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -23,8 +24,8 @@ function MainTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: '#173A5E',
-        tabBarInactiveTintColor: '#8A94A6',
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.placeholder,
         tabBarIcon: ({ color, size, focused }) => {
           let iconName;
           if (route.name === 'DashboardHome') {

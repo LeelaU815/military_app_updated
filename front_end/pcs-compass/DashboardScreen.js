@@ -4,7 +4,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUser, loadProfile } from './storage';
-import { MONTH_NAMES, INSTALLATION_DISPLAY_NAMES } from './constants';
+import { MONTH_NAMES, installationName, disabilityLabel } from './constants';
+import { COLORS } from './theme';
 
 const QUICK_ACTIONS = [
   { key: 'Map', label: 'Map & Discovery', icon: 'map-outline', tab: 'MapTab' },
@@ -106,13 +107,11 @@ export default function DashboardScreen({ navigation }) {
     }
   }
 
-  const installationDisplay = profile.installation
-    ? INSTALLATION_DISPLAY_NAMES[profile.installation] || profile.installation
-    : null;
+  const installationDisplay = installationName(profile.installation);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
-      <LinearGradient colors={['#1B2A4A', '#0B1220']} style={styles.header}>
+      <LinearGradient colors={[COLORS.gradientTop, COLORS.gradientBottom]} style={styles.header}>
         <Text style={styles.welcomeText}>
           Welcome back{profile.familyLastName ? `, ${profile.familyLastName} family` : ''}
         </Text>
@@ -144,7 +143,7 @@ export default function DashboardScreen({ navigation }) {
               style={styles.gridCard}
               onPress={() => handleQuickAction(action)}
             >
-              <Ionicons name={action.icon} size={24} color="#B8863E" />
+              <Ionicons name={action.icon} size={24} color={COLORS.goldDark} />
               <Text style={styles.gridCardText}>{action.label}</Text>
             </TouchableOpacity>
           ))}
@@ -173,7 +172,7 @@ export default function DashboardScreen({ navigation }) {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Category</Text>
             <Text style={styles.summaryValue}>
-              {profile.disabilityType === 'Other' ? profile.disabilityOther : profile.disabilityType}
+              {disabilityLabel(profile)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
@@ -191,11 +190,11 @@ export default function DashboardScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EEF2F6',
+    backgroundColor: COLORS.background,
   },
   emptyState: {
     flex: 1,
-    backgroundColor: '#EEF2F6',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -203,24 +202,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#14213D',
+    color: COLORS.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: '#5B6B82',
+    color: COLORS.textMuted,
     marginBottom: 24,
     textAlign: 'center',
   },
   createButton: {
-    backgroundColor: '#173A5E',
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 10,
   },
   createButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -230,12 +229,12 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   welcomeText: {
-    color: '#9AA5B8',
+    color: COLORS.subtle,
     fontSize: 15,
     marginBottom: 4,
   },
   installationText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
@@ -250,25 +249,25 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   pcsNumber: {
-    color: '#D9A94E',
+    color: COLORS.gold,
     fontSize: 48,
     fontWeight: 'bold',
     marginRight: 10,
   },
   pcsLabel: {
-    color: '#9AA5B8',
+    color: COLORS.subtle,
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
   },
   pcsReportDate: {
-    color: '#D9A94E',
+    color: COLORS.gold,
     fontSize: 13,
     marginTop: 6,
     fontWeight: '600',
   },
   pcsFallback: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -277,7 +276,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   sectionHeading: {
-    color: '#5B6B82',
+    color: COLORS.textMuted,
     fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -290,28 +289,28 @@ const styles = StyleSheet.create({
   },
   gridCard: {
     width: '31.5%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderRadius: 14,
     paddingVertical: 18,
     alignItems: 'center',
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: COLORS.borderLight,
   },
   gridCardText: {
-    color: '#14213D',
+    color: COLORS.text,
     fontSize: 12,
     fontWeight: '600',
     marginTop: 8,
     textAlign: 'center',
   },
   summaryCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: 20,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: COLORS.borderLight,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -320,13 +319,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   efmpBadge: {
-    backgroundColor: '#1B2A4A',
+    backgroundColor: COLORS.gradientTop,
     borderRadius: 20,
     paddingVertical: 4,
     paddingHorizontal: 12,
   },
   efmpBadgeText: {
-    color: '#D9A94E',
+    color: COLORS.gold,
     fontSize: 12,
     fontWeight: '700',
   },
@@ -336,11 +335,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   summaryLabel: {
-    color: '#5B6B82',
+    color: COLORS.textMuted,
     fontSize: 14,
   },
   summaryValue: {
-    color: '#14213D',
+    color: COLORS.text,
     fontSize: 14,
     fontWeight: '600',
   },

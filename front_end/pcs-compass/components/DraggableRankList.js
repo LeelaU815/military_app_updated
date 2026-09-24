@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, PanResponder, Animated } from 'react-native';
 
+import { COLORS } from '../theme';
+
 const ITEM_HEIGHT = 60;
 
 function clamp(value, min, max) {
@@ -94,25 +96,25 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: ITEM_HEIGHT - 10,
-    backgroundColor: '#16305A',
+    backgroundColor: COLORS.navyLight,
     borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
   },
   rank: {
-    color: '#4FA3FF',
+    color: COLORS.accent,
     fontWeight: 'bold',
     fontSize: 18,
     width: 28,
   },
   label: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 15,
     flex: 1,
   },
   grip: {
-    color: '#A9B7CC',
+    color: COLORS.textOnDark,
     fontSize: 20,
   },
 });

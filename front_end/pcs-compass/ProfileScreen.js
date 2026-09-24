@@ -11,21 +11,28 @@ import {
   Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Picker } from '@react-native-picker/picker';
 import { getCurrentUser, loadProfile, saveProfile } from './storage';
 import {
   GENDERS,
   INSURANCE_OPTIONS,
   EFMP_OPTIONS,
-  INSTALLATIONS,
+  DISABILITY_OPTIONS,
+  INSTALLATION_OPTIONS,
   PRIORITY_LABELS,
   getPriorityItems,
   DOB_YEARS,
   FUTURE_YEARS,
+  isOther,
+  disabilityLabel,
+  installationName,
 } from './constants';
 
 import WheelDatePicker from './components/WheelDatePicker';
+import ChoiceRow from './components/ChoiceRow';
+import ScaleSelector from './components/ScaleSelector';
+import Dropdown from './components/Dropdown';
 import DraggableRankList from './components/DraggableRankList';
+import { COLORS } from './theme';
 
 function formatDate(month, day, year) {
   if (!month || !day || !year) return 'Not set';
@@ -90,36 +97,6 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  const renderOptionRow = (options, selected, onSelect) => (
-    <View style={styles.optionRow}>
-      {options.map((option) => (
-        <TouchableOpacity
-          key={option}
-          style={[styles.optionButton, selected === option && styles.optionButtonSelected]}
-          onPress={() => onSelect(option)}
-        >
-          <Text style={[styles.optionText, selected === option && styles.optionTextSelected]}>
-            {option}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
-  const renderScale = (value, onSelect) => (
-    <View style={styles.scaleRow}>
-      {[1, 2, 3, 4, 5].map((num) => (
-        <TouchableOpacity
-          key={num}
-          style={[styles.scaleCircle, value === num && styles.scaleCircleSelected]}
-          onPress={() => onSelect(num)}
-        >
-          <Text style={[styles.scaleText, value === num && styles.scaleTextSelected]}>{num}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
   const Row = ({ label, value }) => (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -183,7 +160,7 @@ export default function ProfileScreen({ navigation }) {
             <Row label="Date of birth" value={formatDate(savedData.dobMonth, savedData.dobDay, savedData.dobYear)} />
             <Row
               label="Disability category"
-              value={savedData.disabilityType === 'Other' ? savedData.disabilityOther : savedData.disabilityType}
+              value={disabilityLabel(savedData)}
             />
             <Row label="Gender" value={savedData.gender === 'Self-describe' ? savedData.genderOther : savedData.gender} />
             <Row label="Insurance" value={savedData.insurance} />
@@ -202,7 +179,7 @@ export default function ProfileScreen({ navigation }) {
             <Row label="Respite support importance" value={savedData.respiteImportance ? `${savedData.respiteImportance} / 5` : null} />
             <Row label="Notifications" value={savedData.notifications} />
             <Row label="Estimated PCS date" value={pcsDateText} />
-            <Row label="Installation" value={savedData.installation} />
+            <Row label="Installation" value={installationName(savedData.installation)} />
           </>
         ) : (
           <>
@@ -211,7 +188,7 @@ export default function ProfileScreen({ navigation }) {
               style={styles.input}
               value={draftData.familyLastName}
               onChangeText={(t) => update('familyLastName', t)}
-              placeholderTextColor="#A9B7CC"
+              placeholderTextColor={COLORS.textOnDark}
             />
 
             <Text style={styles.fieldLabel}>Name</Text>
@@ -219,7 +196,7 @@ export default function ProfileScreen({ navigation }) {
               style={styles.input}
               value={draftData.name}
               onChangeText={(t) => update('name', t)}
-              placeholderTextColor="#A9B7CC"
+              placeholderTextColor={COLORS.textOnDark}
             />
 
             <Text style={styles.fieldLabel}>Age</Text>
@@ -228,7 +205,7 @@ export default function ProfileScreen({ navigation }) {
               value={draftData.age}
               onChangeText={(t) => update('age', t.replace(/[^0-9]/g, ''))}
               keyboardType="number-pad"
-              placeholderTextColor="#A9B7CC"
+              placeholderTextColor={COLORS.textOnDark}
             />
 
             <Text style={styles.fieldLabel}>Date of birth</Text>
@@ -242,61 +219,70 @@ export default function ProfileScreen({ navigation }) {
               yearRange={DOB_YEARS}
             />
 
-            <Text style={styles.fieldLabel}>Disability</Text>
-            <TextInput
-              style={[styles.input, styles.multilineInput]}
+            <Text style={styles.fieldLabel}>Disability category</Text>
+            <Dropdown
+              dark
               value={draftData.disabilityType}
-              onChangeText={(t) => update('disabilityType', t)}
-              multiline
-              placeholderTextColor="#A9B7CC"
+              onChange={(v) => update('disabilityType', v)}
+              options={DISABILITY_OPTIONS}
+              placeholder="Select category"
             />
+            {isOther(draftData.disabilityType) && (
+              <TextInput
+                style={styles.input}
+                placeholder="Please describe"
+                value={draftData.disabilityOther}
+                onChangeText={(t) => update('disabilityOther', t)}
+                placeholderTextColor={COLORS.textOnDark}
+              />
+            )}
 
             <Text style={styles.fieldLabel}>Gender</Text>
-            {renderOptionRow(GENDERS, draftData.gender, (v) => update('gender', v))}
+            <ChoiceRow dark options={GENDERS} selected={draftData.gender} onSelect={(v) => update('gender', v)} />
             {draftData.gender === 'Self-describe' && (
               <TextInput
                 style={[styles.input, { marginTop: 4 }]}
                 value={draftData.genderOther}
                 onChangeText={(t) => update('genderOther', t)}
-                placeholderTextColor="#A9B7CC"
+                placeholderTextColor={COLORS.textOnDark}
               />
             )}
 
             <Text style={styles.fieldLabel}>Insurance</Text>
-            {renderOptionRow(INSURANCE_OPTIONS, draftData.insurance, (v) => update('insurance', v))}
+            <ChoiceRow dark options={INSURANCE_OPTIONS} selected={draftData.insurance} onSelect={(v) => update('insurance', v)} />
 
             <Text style={styles.fieldLabel}>EFMP status</Text>
-            {renderOptionRow(EFMP_OPTIONS, draftData.efmpStatus, (v) => update('efmpStatus', v))}
+            <ChoiceRow dark options={EFMP_OPTIONS} selected={draftData.efmpStatus} onSelect={(v) => update('efmpStatus', v)} />
 
             <Text style={styles.fieldLabel}>Residential area decided?</Text>
-            {renderOptionRow(['Yes', 'No'], draftData.residentialDecided, (v) => update('residentialDecided', v))}
+            <ChoiceRow dark options={['Yes', 'No']} selected={draftData.residentialDecided} onSelect={(v) => update('residentialDecided', v)} />
             {draftData.residentialDecided === 'Yes' && (
               <View>
                 <TextInput
                   style={styles.input}
                   placeholder="Street address"
-                  placeholderTextColor="#A9B7CC"
+                  placeholderTextColor={COLORS.textOnDark}
                   value={draftData.address}
                   onChangeText={(t) => update('address', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="City"
-                  placeholderTextColor="#A9B7CC"
+                  placeholderTextColor={COLORS.textOnDark}
                   value={draftData.city}
                   onChangeText={(t) => update('city', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="State"
-                  placeholderTextColor="#A9B7CC"
+                  placeholderTextColor={COLORS.textOnDark}
                   value={draftData.state}
                   onChangeText={(t) => update('state', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="Zip code"
-                  placeholderTextColor="#A9B7CC"
+                  placeholderTextColor={COLORS.textOnDark}
                   value={draftData.zip}
                   onChangeText={(t) => update('zip', t.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
@@ -312,16 +298,16 @@ export default function ProfileScreen({ navigation }) {
             />
 
             <Text style={[styles.fieldLabel, { marginTop: 24 }]}>IEP / 504 importance (1–5)</Text>
-            {renderScale(draftData.iepImportance, (v) => update('iepImportance', v))}
+            <ScaleSelector dark value={draftData.iepImportance} onSelect={(v) => update('iepImportance', v)} />
 
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Respite support importance (1–5)</Text>
-            {renderScale(draftData.respiteImportance, (v) => update('respiteImportance', v))}
+            <ScaleSelector dark value={draftData.respiteImportance} onSelect={(v) => update('respiteImportance', v)} />
 
             <Text style={styles.fieldLabel}>Notifications</Text>
-            {renderOptionRow(['Yes', 'No'], draftData.notifications, (v) => update('notifications', v))}
+            <ChoiceRow dark options={['Yes', 'No']} selected={draftData.notifications} onSelect={(v) => update('notifications', v)} />
 
             <Text style={styles.fieldLabel}>PCS date type</Text>
-            {renderOptionRow(['Date', 'Timeframe', 'Not sure'], draftData.pcsDateType, (v) => update('pcsDateType', v))}
+            <ChoiceRow dark options={['Date', 'Timeframe', 'Not sure']} selected={draftData.pcsDateType} onSelect={(v) => update('pcsDateType', v)} />
             {draftData.pcsDateType === 'Date' && (
               <WheelDatePicker
                 month={draftData.pcsMonth}
@@ -359,18 +345,13 @@ export default function ProfileScreen({ navigation }) {
             )}
 
             <Text style={styles.fieldLabel}>Installation</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={draftData.installation}
-                style={{ color: '#FFFFFF' }}
-                onValueChange={(v) => update('installation', v)}
-              >
-                <Picker.Item label="Select installation" value="" color="#A9B7CC" />
-                {INSTALLATIONS.map((inst) => (
-                  <Picker.Item key={inst} label={inst} value={inst} color="#000000" />
-                ))}
-              </Picker>
-            </View>
+            <Dropdown
+              dark
+              value={draftData.installation}
+              onChange={(v) => update('installation', v)}
+              options={INSTALLATION_OPTIONS}
+              placeholder="Select installation"
+            />
 
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <Text style={styles.saveButtonText}>Save Changes</Text>
@@ -385,11 +366,11 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1F3A',
+    backgroundColor: COLORS.navy,
   },
   emptyState: {
     flex: 1,
-    backgroundColor: '#0B1F3A',
+    backgroundColor: COLORS.navy,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -405,14 +386,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: COLORS.white,
   },
   backLink: {
-    color: '#A9B7CC',
+    color: COLORS.textOnDark,
     fontSize: 15,
   },
   editLink: {
-    color: '#4FA3FF',
+    color: COLORS.accent,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -423,117 +404,58 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: COLORS.white,
     marginBottom: 20,
   },
   subtitle: {
     fontSize: 15,
-    color: '#A9B7CC',
+    color: COLORS.textOnDark,
   },
   row: {
     marginBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#16305A',
+    borderBottomColor: COLORS.navyLight,
     paddingBottom: 12,
   },
   rowLabel: {
-    color: '#A9B7CC',
+    color: COLORS.textOnDark,
     fontSize: 13,
     marginBottom: 4,
   },
   rowValue: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 16,
   },
   fieldLabel: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 15,
     fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
   },
   helperText: {
-    color: '#A9B7CC',
+    color: COLORS.textOnDark,
     fontSize: 13,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#16305A',
-    color: '#FFFFFF',
+    backgroundColor: COLORS.navyLight,
+    color: COLORS.white,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     marginBottom: 10,
   },
-  multilineInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  optionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  optionButton: {
-    borderWidth: 2,
-    borderColor: '#16305A',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginRight: 10,
-    marginBottom: 10,
-  },
-  optionButtonSelected: {
-    backgroundColor: '#4FA3FF',
-    borderColor: '#4FA3FF',
-  },
-  optionText: {
-    color: '#A9B7CC',
-    fontSize: 15,
-  },
-  optionTextSelected: {
-    color: '#0B1F3A',
-    fontWeight: '600',
-  },
-  scaleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  scaleCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#16305A',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scaleCircleSelected: {
-    backgroundColor: '#4FA3FF',
-    borderColor: '#4FA3FF',
-  },
-  scaleText: {
-    color: '#A9B7CC',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scaleTextSelected: {
-    color: '#0B1F3A',
-  },
-  pickerWrapper: {
-    backgroundColor: '#16305A',
-    borderRadius: 10,
-    marginBottom: 10,
-  },
   saveButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 24,
   },
   saveButtonText: {
-    color: '#0B1F3A',
+    color: COLORS.navy,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -542,11 +464,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: COLORS.white,
     borderRadius: 10,
   },
   backButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 15,
   },
 });

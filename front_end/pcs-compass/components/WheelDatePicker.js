@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 
 import { MONTH_NAMES } from '../constants';
+import { COLORS } from '../theme';
 
 function daysInMonth(month, year) {
   if (!month) return 31;
@@ -28,9 +29,9 @@ export default function WheelDatePicker({
         itemStyle={styles.pickerItem}
         onValueChange={onChangeMonth}
       >
-        <Picker.Item label="Month" value={null} color="#A9B7CC" />
+        <Picker.Item label="Month" value={null} color={COLORS.textOnDark} />
         {MONTH_NAMES.map((m, i) => (
-          <Picker.Item key={m} label={m} value={i + 1} color="#000000" />
+          <Picker.Item key={m} label={m} value={i + 1} color={COLORS.black} />
         ))}
       </Picker>
 
@@ -40,9 +41,9 @@ export default function WheelDatePicker({
         itemStyle={styles.pickerItem}
         onValueChange={onChangeDay}
       >
-        <Picker.Item label="Day" value={null} color="#A9B7CC" />
+        <Picker.Item label="Day" value={null} color={COLORS.textOnDark} />
         {days.map((d) => (
-          <Picker.Item key={d} label={String(d)} value={d} color="#000000" />
+          <Picker.Item key={d} label={String(d)} value={d} color={COLORS.black} />
         ))}
       </Picker>
 
@@ -52,9 +53,9 @@ export default function WheelDatePicker({
         itemStyle={styles.pickerItem}
         onValueChange={onChangeYear}
       >
-        <Picker.Item label="Year" value={null} color="#A9B7CC" />
+        <Picker.Item label="Year" value={null} color={COLORS.textOnDark} />
         {yearRange.map((y) => (
-          <Picker.Item key={y} label={String(y)} value={y} color="#000000" />
+          <Picker.Item key={y} label={String(y)} value={y} color={COLORS.black} />
         ))}
       </Picker>
     </View>
@@ -65,15 +66,15 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#16305A',
+    backgroundColor: COLORS.navyLight,
     borderRadius: 10,
   },
   picker: {
     flex: 1,
-    color: '#FFFFFF',
+    color: COLORS.white,
   },
   pickerItem: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 16,
   },
 });

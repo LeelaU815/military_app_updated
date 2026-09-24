@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { loadUsers, saveUsers, setCurrentUser } from './storage';
+import { COLORS } from './theme';
 
 export default function SignUpScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -61,7 +62,7 @@ export default function SignUpScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Name"
-        placeholderTextColor="#A9B7CC"
+        placeholderTextColor={COLORS.textOnDark}
         value={name}
         onChangeText={setName}
       />
@@ -69,7 +70,7 @@ export default function SignUpScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Email"
-        placeholderTextColor="#A9B7CC"
+        placeholderTextColor={COLORS.textOnDark}
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -79,7 +80,7 @@ export default function SignUpScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Password"
-        placeholderTextColor="#A9B7CC"
+        placeholderTextColor={COLORS.textOnDark}
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -99,20 +100,20 @@ export default function SignUpScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1F3A',
+    backgroundColor: COLORS.navy,
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: COLORS.white,
     marginBottom: 32,
     textAlign: 'center',
   },
   input: {
-    backgroundColor: '#16305A',
-    color: '#FFFFFF',
+    backgroundColor: COLORS.navyLight,
+    color: COLORS.white,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -120,19 +121,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   button: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 8,
   },
   buttonText: {
-    color: '#0B1F3A',
+    color: COLORS.navy,
     fontSize: 16,
     fontWeight: '600',
   },
   backText: {
-    color: '#A9B7CC',
+    color: COLORS.textOnDark,
     textAlign: 'center',
     marginTop: 20,
     fontSize: 14,

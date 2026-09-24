@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
+import { COLORS } from './theme';
+
 export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
@@ -30,7 +32,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B1F3A',
+    backgroundColor: COLORS.navy,
   },
   content: {
     flex: 1,
@@ -41,7 +43,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 42,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: COLORS.white,
     marginBottom: 60,
     letterSpacing: 1,
   },
@@ -50,7 +52,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     paddingVertical: 14,
     borderRadius: 10,
     width: '80%',
@@ -58,20 +60,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   primaryButtonText: {
-    color: '#0B1F3A',
+    color: COLORS.navy,
     fontSize: 16,
     fontWeight: '600',
   },
   secondaryButton: {
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: COLORS.white,
     paddingVertical: 14,
     borderRadius: 10,
     width: '80%',
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontSize: 16,
     fontWeight: '600',
   },

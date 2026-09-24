@@ -10,23 +10,27 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUser, saveProfile } from './storage';
 import {
   GENDERS,
-  DISABILITY_CATEGORIES,
+  DISABILITY_OPTIONS,
   INSURANCE_OPTIONS,
   EFMP_OPTIONS,
-  INSTALLATIONS,
+  INSTALLATION_OPTIONS,
   getPriorityItems,
   DOB_YEARS,
   FUTURE_YEARS,
+  isOther,
 } from './constants';
 
 import WheelDatePicker from './components/WheelDatePicker';
+import ChoiceRow from './components/ChoiceRow';
+import ScaleSelector from './components/ScaleSelector';
+import Dropdown from './components/Dropdown';
 import DraggableRankList from './components/DraggableRankList';
+import { COLORS } from './theme';
 
 const TOTAL_STEPS = 5;
 const STEP_TITLES = [
@@ -79,7 +83,7 @@ export default function ProfileCreationScreen({ navigation }) {
       case 2:
         return (
           data.disabilityType.length > 0 &&
-          (data.disabilityType !== 'Other' || data.disabilityOther.trim().length > 0) &&
+          (!isOther(data.disabilityType) || data.disabilityOther.trim().length > 0) &&
           data.efmpStatus.length > 0 &&
           data.iepImportance > 0 &&
           data.respiteImportance > 0
@@ -141,47 +145,6 @@ export default function ProfileCreationScreen({ navigation }) {
     }
   };
 
-  const renderSegmented = (options, selected, onSelect) => (
-    <View style={styles.segmentedRow}>
-      {options.map((option) => (
-        <TouchableOpacity
-          key={option}
-          style={[styles.segment, selected === option && styles.segmentSelected]}
-          onPress={() => onSelect(option)}
-        >
-          <Text style={[styles.segmentText, selected === option && styles.segmentTextSelected]}>
-            {option}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
-  const renderScale = (value, onSelect) => (
-    <View style={styles.scaleRow}>
-      {[1, 2, 3, 4, 5].map((num) => (
-        <TouchableOpacity
-          key={num}
-          style={[styles.scaleCircle, value === num && styles.scaleCircleSelected]}
-          onPress={() => onSelect(num)}
-        >
-          <Text style={[styles.scaleText, value === num && styles.scaleTextSelected]}>{num}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
-
-  const renderDropdown = (selectedValue, onValueChange, items, placeholder) => (
-    <View style={styles.pickerWrapper}>
-      <Picker selectedValue={selectedValue} onValueChange={onValueChange}>
-        <Picker.Item label={placeholder} value="" color="#8A94A6" />
-        {items.map((item) => (
-          <Picker.Item key={item} label={item} value={item} color="#14213D" />
-        ))}
-      </Picker>
-    </View>
-  );
-
   const renderStepContent = () => {
     switch (step) {
       case 1:
@@ -191,7 +154,7 @@ export default function ProfileCreationScreen({ navigation }) {
             <TextInput
               style={styles.input}
               placeholder="e.g. Reynolds"
-              placeholderTextColor="#8A94A6"
+              placeholderTextColor={COLORS.placeholder}
               value={data.familyLastName}
               onChangeText={(t) => update('familyLastName', t)}
             />
@@ -200,7 +163,7 @@ export default function ProfileCreationScreen({ navigation }) {
             <TextInput
               style={styles.input}
               placeholder="e.g. Mia Reynolds"
-              placeholderTextColor="#8A94A6"
+              placeholderTextColor={COLORS.placeholder}
               value={data.name}
               onChangeText={(t) => update('name', t)}
             />
@@ -209,7 +172,7 @@ export default function ProfileCreationScreen({ navigation }) {
             <TextInput
               style={styles.input}
               placeholder="9"
-              placeholderTextColor="#8A94A6"
+              placeholderTextColor={COLORS.placeholder}
               value={data.age}
               onChangeText={(t) => update('age', t.replace(/[^0-9]/g, ''))}
               keyboardType="number-pad"
@@ -227,12 +190,17 @@ export default function ProfileCreationScreen({ navigation }) {
             />
 
             <Text style={styles.fieldLabel}>Gender</Text>
-            {renderDropdown(data.gender, (v) => update('gender', v), GENDERS, 'Select gender')}
+            <Dropdown
+              value={data.gender}
+              onChange={(v) => update('gender', v)}
+              options={GENDERS}
+              placeholder="Select gender"
+            />
             {data.gender === 'Self-describe' && (
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
                 placeholder="Please describe"
-                placeholderTextColor="#8A94A6"
+                placeholderTextColor={COLORS.placeholder}
                 value={data.genderOther}
                 onChangeText={(t) => update('genderOther', t)}
               />
@@ -243,74 +211,74 @@ export default function ProfileCreationScreen({ navigation }) {
         return (
           <>
             <Text style={styles.fieldLabel}>Disability category</Text>
-            {renderDropdown(
-              data.disabilityType,
-              (v) => update('disabilityType', v),
-              DISABILITY_CATEGORIES,
-              'Select category'
-            )}
-            {data.disabilityType === 'Other' && (
+            <Dropdown
+              value={data.disabilityType}
+              onChange={(v) => update('disabilityType', v)}
+              options={DISABILITY_OPTIONS}
+              placeholder="Select category"
+            />
+            {isOther(data.disabilityType) && (
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
                 placeholder="Please describe"
-                placeholderTextColor="#8A94A6"
+                placeholderTextColor={COLORS.placeholder}
                 value={data.disabilityOther}
                 onChangeText={(t) => update('disabilityOther', t)}
               />
             )}
 
             <Text style={styles.fieldLabel}>EFMP status</Text>
-            {renderSegmented(EFMP_OPTIONS, data.efmpStatus, (v) => update('efmpStatus', v))}
+            <ChoiceRow options={EFMP_OPTIONS} selected={data.efmpStatus} onSelect={(v) => update('efmpStatus', v)} />
 
             <Text style={styles.fieldLabel}>
               How important is it for your school to have IEP / 504 accommodations?
             </Text>
             <Text style={styles.helperText}>1 = irrelevant, 5 = necessary</Text>
-            {renderScale(data.iepImportance, (v) => update('iepImportance', v))}
+            <ScaleSelector value={data.iepImportance} onSelect={(v) => update('iepImportance', v)} />
 
             <Text style={[styles.fieldLabel, { marginTop: 20 }]}>
               How important is it to have respite caregiver and support?
             </Text>
             <Text style={styles.helperText}>1 = irrelevant, 5 = necessary</Text>
-            {renderScale(data.respiteImportance, (v) => update('respiteImportance', v))}
+            <ScaleSelector value={data.respiteImportance} onSelect={(v) => update('respiteImportance', v)} />
           </>
         );
       case 3:
         return (
           <>
             <Text style={styles.fieldLabel}>What insurance do you have?</Text>
-            {renderSegmented(INSURANCE_OPTIONS, data.insurance, (v) => update('insurance', v))}
+            <ChoiceRow options={INSURANCE_OPTIONS} selected={data.insurance} onSelect={(v) => update('insurance', v)} />
 
             <Text style={styles.fieldLabel}>Have you already decided on your residential area?</Text>
-            {renderSegmented(['Yes', 'No'], data.residentialDecided, (v) => update('residentialDecided', v))}
+            <ChoiceRow options={['Yes', 'No']} selected={data.residentialDecided} onSelect={(v) => update('residentialDecided', v)} />
 
             {data.residentialDecided === 'Yes' && (
               <View style={{ marginTop: 8 }}>
                 <TextInput
                   style={styles.input}
                   placeholder="Street address"
-                  placeholderTextColor="#8A94A6"
+                  placeholderTextColor={COLORS.placeholder}
                   value={data.address}
                   onChangeText={(t) => update('address', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="City"
-                  placeholderTextColor="#8A94A6"
+                  placeholderTextColor={COLORS.placeholder}
                   value={data.city}
                   onChangeText={(t) => update('city', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="State"
-                  placeholderTextColor="#8A94A6"
+                  placeholderTextColor={COLORS.placeholder}
                   value={data.state}
                   onChangeText={(t) => update('state', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="Zip code"
-                  placeholderTextColor="#8A94A6"
+                  placeholderTextColor={COLORS.placeholder}
                   value={data.zip}
                   onChangeText={(t) => update('zip', t.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
@@ -342,10 +310,10 @@ export default function ProfileCreationScreen({ navigation }) {
               Receive notifications for status updates and deadlines?
             </Text>
             <Text style={styles.helperText}>Highly recommended — changeable anytime in settings.</Text>
-            {renderSegmented(['Yes', 'No'], data.notifications, (v) => update('notifications', v))}
+            <ChoiceRow options={['Yes', 'No']} selected={data.notifications} onSelect={(v) => update('notifications', v)} />
 
             <Text style={styles.fieldLabel}>When is your estimated PCS date?</Text>
-            {renderSegmented(['Date', 'Timeframe', 'Not sure'], data.pcsDateType, (v) => update('pcsDateType', v))}
+            <ChoiceRow options={['Date', 'Timeframe', 'Not sure']} selected={data.pcsDateType} onSelect={(v) => update('pcsDateType', v)} />
 
             {data.pcsDateType === 'Date' && (
               <View style={{ marginTop: 8 }}>
@@ -388,7 +356,12 @@ export default function ProfileCreationScreen({ navigation }) {
             <Text style={styles.fieldLabel}>
               Which military installation will you (or your spouse) be employed at?
             </Text>
-            {renderDropdown(data.installation, (v) => update('installation', v), INSTALLATIONS, 'Select installation')}
+            <Dropdown
+              value={data.installation}
+              onChange={(v) => update('installation', v)}
+              options={INSTALLATION_OPTIONS}
+              placeholder="Select installation"
+            />
           </>
         );
       default:
@@ -401,9 +374,9 @@ export default function ProfileCreationScreen({ navigation }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <LinearGradient colors={['#1B2A4A', '#0B1220']} style={styles.header}>
+      <LinearGradient colors={[COLORS.gradientTop, COLORS.gradientBottom]} style={styles.header}>
         <View style={styles.badgeRow}>
-          <Ionicons name="compass-outline" size={18} color="#D9A94E" />
+          <Ionicons name="compass-outline" size={18} color={COLORS.gold} />
           <Text style={styles.badgeText}>PCS Compass</Text>
         </View>
         <Text style={styles.headerTitle}>Let's build your family profile</Text>
@@ -441,7 +414,7 @@ export default function ProfileCreationScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#EEF2F6',
+    backgroundColor: COLORS.background,
   },
   header: {
     paddingTop: 56,
@@ -454,7 +427,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   badgeText: {
-    color: '#D9A94E',
+    color: COLORS.gold,
     fontSize: 14,
     fontWeight: '700',
     marginLeft: 8,
@@ -463,12 +436,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: COLORS.white,
     marginBottom: 6,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#D6E4E3',
+    color: COLORS.mist,
     marginBottom: 14,
   },
   progressTrack: {
@@ -482,7 +455,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   progressSegmentFilled: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
   },
   scrollContent: {
     paddingHorizontal: 24,
@@ -492,81 +465,25 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#14213D',
+    color: COLORS.text,
     marginTop: 16,
     marginBottom: 8,
   },
   helperText: {
-    color: '#5B6B82',
+    color: COLORS.textMuted,
     fontSize: 13,
     marginBottom: 10,
   },
   input: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#CBD5E1',
-    color: '#14213D',
+    borderColor: COLORS.border,
+    color: COLORS.text,
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
     marginBottom: 10,
-  },
-  pickerWrapper: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: 10,
-  },
-  segmentedRow: {
-    flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 10,
-    padding: 4,
-    marginBottom: 8,
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  segmentSelected: {
-    backgroundColor: '#173A5E',
-  },
-  segmentText: {
-    color: '#5B6B82',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  segmentTextSelected: {
-    color: '#FFFFFF',
-  },
-  scaleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  scaleCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 2,
-    borderColor: '#CBD5E1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  scaleCircleSelected: {
-    backgroundColor: '#173A5E',
-    borderColor: '#173A5E',
-  },
-  scaleText: {
-    color: '#5B6B82',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scaleTextSelected: {
-    color: '#FFFFFF',
   },
   navRow: {
     flexDirection: 'row',
@@ -574,18 +491,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderTopColor: COLORS.borderLight,
+    backgroundColor: COLORS.white,
   },
   navButtonSecondary: {
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#173A5E',
+    borderColor: COLORS.primary,
   },
   navButtonSecondaryText: {
-    color: '#173A5E',
+    color: COLORS.primary,
     fontWeight: '600',
     fontSize: 15,
   },
@@ -593,10 +510,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 28,
     borderRadius: 10,
-    backgroundColor: '#173A5E',
+    backgroundColor: COLORS.primary,
   },
   navButtonPrimaryText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
     fontWeight: '600',
     fontSize: 15,
   },
