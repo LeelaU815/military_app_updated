@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUser, loadProfile, saveProfile } from './storage';
+import { withHomeLocation } from './geocode';
 import {
   GENDERS,
   DISABILITY_OPTIONS,
@@ -71,6 +72,7 @@ export default function ProfileCreationScreen({ navigation }) {
   const [data, setData] = useState(EMPTY_PROFILE);
   const [uid, setUid] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // Pick up where they left off if they saved a draft earlier.
   useEffect(() => {
@@ -135,18 +137,23 @@ export default function ProfileCreationScreen({ navigation }) {
   };
 
   const handleFinish = async () => {
+    setSaving(true);
     try {
       // Save the ranking even if they never dragged anything (the default order is still a ranking).
-      const { draftStep, ...profile } = data;
-      await saveProfile(uid, {
-        ...profile,
+      const { draftStep, updatedAt, ...rest } = data;
+      const { profile, found } = await withHomeLocation({
+        ...rest,
         priorityOrder: priorityIds(data.residentialDecided, data.priorityOrder),
         status: 'complete',
       });
+      await saveProfile(uid, profile);
+      if (!found) Alert.alert('Address not found', "We couldn't find that address on the map, so distances will be measured from the base. You can fix the address in your profile.");
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (error) {
       Alert.alert('Error', 'Something went wrong saving your profile.');
       console.log(error);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -409,9 +416,9 @@ export default function ProfileCreationScreen({ navigation }) {
         <TouchableOpacity style={styles.navButtonSecondary} onPress={handleBack}>
           <Text style={styles.navButtonSecondaryText}>Back</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButtonPrimary} onPress={handleNext}>
+        <TouchableOpacity style={styles.navButtonPrimary} onPress={handleNext} disabled={saving}>
           <Text style={styles.navButtonPrimaryText}>
-            {step === TOTAL_STEPS ? 'Finish' : 'Next'}
+            {step === TOTAL_STEPS ? (saving ? 'Saving...' : 'Finish') : 'Next'}
           </Text>
         </TouchableOpacity>
       </View>

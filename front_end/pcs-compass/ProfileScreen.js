@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getCurrentUser, loadProfile, saveProfile, logOut } from './storage';
+import { withHomeLocation } from './geocode';
 import {
   GENDERS,
   INSURANCE_OPTIONS,
@@ -96,16 +97,17 @@ export default function ProfileScreen({ navigation }) {
       return;
     }
     const { draftStep, updatedAt, ...rest } = draftData;
-    const profile = {
-      ...rest,
-      priorityOrder: priorityIds(draftData.residentialDecided, draftData.priorityOrder),
-      status: 'complete',
-    };
     try {
+      // Only looks the address up again if it changed.
+      const { profile, found } = await withHomeLocation({
+        ...rest,
+        priorityOrder: priorityIds(draftData.residentialDecided, draftData.priorityOrder),
+        status: 'complete',
+      }, savedData);
       await saveProfile(uid, profile);
       setSavedData(profile);
       setEditMode(false);
-      Alert.alert('Saved', 'Profile updated.');
+      Alert.alert(found ? 'Saved' : 'Saved, but address not found', found ? 'Profile updated.' : "We couldn't find that address on the map, so distances will be measured from the base. You can fix the address in your profile.");
     } catch (error) {
       Alert.alert('Error', 'Something went wrong saving your profile.');
       console.log(error);
