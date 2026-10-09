@@ -44,13 +44,13 @@ const LEGEND = [
 // Cells grow with the screen. Big cells (iPad) show event names like the iPad Calendar app; small ones show dots.
 function DayCell({ date, items, selected, today, onPress, size }) {
   const roomy = size >= 70;
-  const height = roomy ? Math.min(size * 0.95, 118) : Math.max(size * 1.05, 52);
-  const circle = roomy ? 32 : Math.min(size * 0.72, 40);
+  const height = roomy ? Math.min(size * 1.25, 150) : Math.max(size * 1.3, 60);
+  const circle = roomy ? 36 : Math.min(size * 0.8, 46);
   if (!date) return <View style={[styles.cell, { width: size, height }]} />;
   const list = items || [];
   // One dot per kind of thing on that day, max 3.
   const colors = [...new Set(list.map((i) => i.color))].slice(0, 3);
-  const maxLabels = Math.max(1, Math.floor((height - circle - 10) / 17));
+  const maxLabels = Math.max(1, Math.floor((height - circle - 10) / 21));
   const shown = list.length > maxLabels ? list.slice(0, maxLabels - 1) : list;
   return (
     <TouchableOpacity
@@ -69,7 +69,7 @@ function DayCell({ date, items, selected, today, onPress, size }) {
         <Text
           style={[
             styles.dayNumber,
-            { fontSize: roomy ? 17 : Math.min(18 + (size - 46) * 0.15, 21) },
+            { fontSize: roomy ? 19 : Math.min(19 + (size - 46) * 0.2, 23) },
             today && { color: RED, fontWeight: '600' },
             (selected || (roomy && today)) && { color: COLORS.white, fontWeight: '600' },
           ]}
@@ -252,10 +252,10 @@ export default function CalendarScreen({ navigation, route }) {
           {MONTH_NAMES[month.month]} <Text style={{ color: RED }}>{month.year}</Text>
         </Text>
         <TouchableOpacity onPress={() => changeMonth(-1)} hitSlop={10} accessibilityLabel="Previous month" style={styles.arrow}>
-          <Ionicons name="chevron-back" size={22} color={RED} />
+          <Ionicons name="chevron-back" size={26} color={RED} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => changeMonth(1)} hitSlop={10} accessibilityLabel="Next month" style={styles.arrow}>
-          <Ionicons name="chevron-forward" size={22} color={RED} />
+          <Ionicons name="chevron-forward" size={26} color={RED} />
         </TouchableOpacity>
       </View>
       <View style={styles.card}>
@@ -326,7 +326,7 @@ export default function CalendarScreen({ navigation, route }) {
       <View style={[styles.screen, { paddingTop: insets.top }]}>
         {header}
         <View style={styles.split}>
-          <ScrollView style={{ flex: 1.7 }} contentContainerStyle={{ paddingBottom: 40 }}>{calendarCard}</ScrollView>
+          <ScrollView style={{ flex: 2.2 }} contentContainerStyle={{ paddingBottom: 40 }}>{calendarCard}</ScrollView>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>{dayList}</ScrollView>
         </View>
       </View>
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   },
   monthTitle: {
     flex: 1,
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '700',
     color: COLORS.label,
   },
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 4,
     overflow: 'hidden',
-    height: 15,
+    height: 19,
   },
   labelBar: {
     width: 3,
@@ -461,12 +461,12 @@ const styles = StyleSheet.create({
   },
   labelText: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.label,
     marginLeft: 3,
   },
   moreText: {
-    fontSize: 11,
+    fontSize: 12,
     color: COLORS.secondaryLabel,
     marginLeft: 3,
   },
