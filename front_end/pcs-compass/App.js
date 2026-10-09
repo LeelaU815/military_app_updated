@@ -11,6 +11,7 @@ import ProfileCreationScreen from './ProfileCreationScreen';
 import ProfileScreen from './ProfileScreen';
 import MapScreen from './MapScreen';
 import PlaceDetailsScreen from './PlaceDetailsScreen';
+import TaskEditorScreen from './TaskEditorScreen';
 import ChecklistsScreen from './ChecklistsScreen';
 import DocumentsScreen from './DocumentsScreen';
 import CalendarScreen from './CalendarScreen';
@@ -68,6 +69,7 @@ export default function App() {
         <Stack.Screen name="ProfileCreation" component={ProfileCreationScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="PlaceDetails" component={PlaceDetailsScreen} options={{ presentation: 'modal' }} />
+        <Stack.Screen name="TaskEditor" component={TaskEditorScreen} options={{ presentation: 'modal' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

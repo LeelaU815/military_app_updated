@@ -1,15 +1,12 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
   Alert,
   Linking,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,15 +18,15 @@ import {
   loadSavedLocations,
   loadChecklistProgress,
   setTaskDone,
-  addCustomTask,
   deleteCustomTask,
 } from './storage';
-import { buildChecklist, pcsDate, STAGES } from './checklists';
+import { buildChecklist, groupByTopic, pcsDate, STAGES } from './checklists';
 import { MONTH_NAMES } from './constants';
 import { COLORS } from './theme';
 
 const GREEN = '#34C759';
 const RED = '#FF3B30';
+const ORANGE = '#FF9500';
 
 function dueText(due) {
   if (!due) return null;
@@ -54,9 +51,8 @@ export default function ChecklistsScreen({ navigation }) {
   const [profile, setProfile] = useState(null);
   const [saved, setSaved] = useState({});
   const [progress, setProgress] = useState({});
-  const [adding, setAdding] = useState(null); // stage id with the "add task" box open
-  const [newTitle, setNewTitle] = useState('');
-  const submitted = useRef(false); // "Done" and losing focus both fire; only save once
+  const [expanded, setExpanded] = useState(null); // task id that's open
+  const [showDone, setShowDone] = useState({}); // stage id -> showing completed tasks
 
   useFocusEffect(
     useCallback(() => {
@@ -100,20 +96,9 @@ export default function ChecklistsScreen({ navigation }) {
     }
   };
 
-  const submitNew = async (stage) => {
-    if (submitted.current) return;
-    submitted.current = true;
-    const title = newTitle.trim();
-    setAdding(null);
-    setNewTitle('');
-    if (!title) return;
-    try {
-      const task = await addCustomTask(uid, stage, title);
-      setProgress((prev) => ({ ...prev, [task.id]: task }));
-    } catch (error) {
-      Alert.alert('Error', "Couldn't add that task. Try again.");
-      console.log(error);
-    }
+  const openEditor = (stage, task) => {
+    const places = Object.keys(saved);
+    navigation.navigate('TaskEditor', { stage, task: task ? { id: task.id, ...task.fields } : null, placeIds: places });
   };
 
   const removeCustom = (task) => {
@@ -138,6 +123,87 @@ export default function ChecklistsScreen({ navigation }) {
     ]);
   };
 
+  const renderTask = (task) => {
+    const isOpen = expanded === task.id;
+    const due = task.done ? null : dueText(task.due);
+    return (
+      <View key={task.id} style={styles.topBorder}>
+        <View style={styles.taskRow}>
+          <TouchableOpacity
+            onPress={() => toggle(task)}
+            hitSlop={8}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: task.done }}
+          >
+            <Ionicons
+              name={task.done ? 'checkmark-circle' : 'ellipse-outline'}
+              size={26}
+              color={task.done ? GREEN : COLORS.tertiaryLabel}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.taskBody} onPress={() => setExpanded(isOpen ? null : task.id)} activeOpacity={0.6}>
+            <Text style={[styles.taskTitle, task.done && styles.taskTitleDone]}>{task.title}</Text>
+            {due && (
+              <Text style={[styles.due, due.overdue && { color: RED }, due.soon && { color: ORANGE }]}>{due.text}</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setExpanded(isOpen ? null : task.id)} hitSlop={8} style={styles.chevron}>
+            <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={COLORS.tertiaryLabel} />
+          </TouchableOpacity>
+        </View>
+
+        {isOpen && (
+          <View style={styles.details}>
+            {!!task.details && <Text style={styles.detailsText}>{task.details}</Text>}
+            {task.custom && !task.details && <Text style={styles.detailsText}>A task you added.</Text>}
+            {task.due && (
+              <Text style={styles.detailLine}>
+                <Text style={styles.detailLabel}>Due  </Text>
+                {task.due.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              </Text>
+            )}
+            {!!task.address && (
+              <Text style={styles.detailLine}><Text style={styles.detailLabel}>Address  </Text>{task.address}</Text>
+            )}
+            {!!task.phone && (
+              <Text style={styles.detailLine}><Text style={styles.detailLabel}>Phone  </Text>{task.phone}</Text>
+            )}
+            <View style={styles.actions}>
+              <TouchableOpacity style={[styles.action, styles.actionPrimary]} onPress={() => toggle(task)}>
+                <Ionicons name={task.done ? 'arrow-undo' : 'checkmark'} size={16} color={COLORS.white} />
+                <Text style={styles.actionPrimaryText}>{task.done ? 'Not done' : 'Mark done'}</Text>
+              </TouchableOpacity>
+              {!!task.phone && (
+                <TouchableOpacity style={styles.action} onPress={() => callNumber(task.phone)}>
+                  <Ionicons name="call" size={15} color={COLORS.primary} />
+                  <Text style={styles.actionText}>Call</Text>
+                </TouchableOpacity>
+              )}
+              {!!task.source && (
+                <TouchableOpacity style={styles.action} onPress={() => Linking.openURL(task.source).catch(() => {})}>
+                  <Ionicons name="open-outline" size={15} color={COLORS.primary} />
+                  <Text style={styles.actionText}>Source</Text>
+                </TouchableOpacity>
+              )}
+              {task.custom && (
+                <TouchableOpacity style={styles.action} onPress={() => openEditor(task.stage, task)}>
+                  <Ionicons name="create-outline" size={15} color={COLORS.primary} />
+                  <Text style={styles.actionText}>Edit</Text>
+                </TouchableOpacity>
+              )}
+              {task.custom && (
+                <TouchableOpacity style={styles.action} onPress={() => removeCustom(task)}>
+                  <Ionicons name="trash-outline" size={15} color={RED} />
+                  <Text style={[styles.actionText, { color: RED }]}>Delete</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   if (loading) {
     return <View style={[styles.screen, styles.center]}><Text style={styles.muted}>Loading...</Text></View>;
   }
@@ -160,11 +226,8 @@ export default function ChecklistsScreen({ navigation }) {
   const hasDate = !!pcsDate(profile);
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }}
-        keyboardShouldPersistTaps="handled"
-      >
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 40 }}>
         <Text style={styles.largeTitle}>Checklists</Text>
         <Text style={styles.subtitle}>
           {doneCount} of {tasks.length} done
@@ -176,83 +239,47 @@ export default function ChecklistsScreen({ navigation }) {
 
         {STAGES.map((stage) => {
           const stageTasks = tasks.filter((t) => t.stage === stage.id);
-          const stageDone = stageTasks.filter((t) => t.done).length;
+          const open = stageTasks.filter((t) => !t.done);
+          const done = stageTasks.filter((t) => t.done);
           return (
             <View key={stage.id}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionHeader}>{stage.label.toUpperCase()}</Text>
-                <Text style={styles.sectionCount}>{stageDone} of {stageTasks.length}</Text>
+                <Text style={styles.sectionCount}>{done.length} of {stageTasks.length}</Text>
               </View>
               <View style={styles.group}>
-                {stageTasks.map((task) => {
-                  const due = task.done ? null : dueText(task.due);
-                  return (
-                    <View key={task.id} style={[styles.taskRow, styles.rowBorder]}>
-                      <TouchableOpacity
-                        onPress={() => toggle(task)}
-                        hitSlop={8}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: task.done }}
-                      >
-                        <Ionicons
-                          name={task.done ? 'checkmark-circle' : 'ellipse-outline'}
-                          size={26}
-                          color={task.done ? GREEN : COLORS.tertiaryLabel}
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.taskBody}
-                        onPress={() => toggle(task)}
-                        onLongPress={task.custom ? () => removeCustom(task) : undefined}
-                        activeOpacity={0.6}
-                      >
-                        <Text style={[styles.taskTitle, task.done && styles.taskTitleDone]}>{task.title}</Text>
-                        {due && (
-                          <Text style={[styles.due, due.overdue && { color: RED }, due.soon && { color: '#FF9500' }]}>
-                            {due.text}
-                          </Text>
-                        )}
-                        {task.custom && !task.done && <Text style={styles.due}>Your task · hold to delete</Text>}
-                      </TouchableOpacity>
-                      {!task.done && task.phone && (
-                        <TouchableOpacity style={styles.iconButton} onPress={() => callNumber(task.phone)} accessibilityLabel="Call">
-                          <Ionicons name="call" size={16} color={COLORS.primary} />
-                        </TouchableOpacity>
-                      )}
-                      {!task.done && task.source && (
-                        <TouchableOpacity
-                          style={styles.iconButton}
-                          onPress={() => Linking.openURL(task.source).catch(() => {})}
-                          accessibilityLabel="Source"
-                        >
-                          <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />
-                        </TouchableOpacity>
-                      )}
+                {groupByTopic(open).map((group) => (
+                  <View key={group.id}>
+                    <View style={styles.topicRow}>
+                      {group.isPlace && <Ionicons name="location" size={13} color={COLORS.secondaryLabel} style={{ marginRight: 4 }} />}
+                      <Text style={styles.topic} numberOfLines={1}>{group.label.toUpperCase()}</Text>
                     </View>
-                  );
-                })}
-
-                {adding === stage.id ? (
-                  <View style={styles.taskRow}>
-                    <Ionicons name="ellipse-outline" size={26} color={COLORS.tertiaryLabel} />
-                    <TextInput
-                      style={styles.addInput}
-                      placeholder="New task"
-                      placeholderTextColor={COLORS.tertiaryLabel}
-                      value={newTitle}
-                      onChangeText={setNewTitle}
-                      autoFocus
-                      returnKeyType="done"
-                      onSubmitEditing={() => submitNew(stage.id)}
-                      onBlur={() => submitNew(stage.id)}
-                    />
+                    {group.tasks.map((task) => renderTask(task))}
                   </View>
-                ) : (
-                  <TouchableOpacity style={styles.addRow} onPress={() => { submitted.current = false; setNewTitle(''); setAdding(stage.id); }}>
-                    <Ionicons name="add-circle" size={24} color={COLORS.primary} />
-                    <Text style={styles.addText}>Add task</Text>
+                ))}
+                {open.length === 0 && stageTasks.length > 0 && (
+                  <Text style={styles.allDone}>All done here 🎉</Text>
+                )}
+
+                {done.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.completedRow}
+                    onPress={() => setShowDone((prev) => ({ ...prev, [stage.id]: !prev[stage.id] }))}
+                  >
+                    <Ionicons
+                      name={showDone[stage.id] ? 'chevron-down' : 'chevron-forward'}
+                      size={16}
+                      color={COLORS.secondaryLabel}
+                    />
+                    <Text style={styles.completedText}>Completed ({done.length})</Text>
                   </TouchableOpacity>
                 )}
+                {showDone[stage.id] && done.map((task) => renderTask(task))}
+
+                <TouchableOpacity style={[styles.addRow, styles.topBorder]} onPress={() => openEditor(stage.id)}>
+                  <Ionicons name="add-circle" size={24} color={COLORS.primary} />
+                  <Text style={styles.addText}>Add task</Text>
+                </TouchableOpacity>
               </View>
             </View>
           );
@@ -267,7 +294,7 @@ export default function ChecklistsScreen({ navigation }) {
           </TouchableOpacity>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -344,16 +371,31 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     overflow: 'hidden',
   },
+  topicRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+  },
+  topic: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    color: COLORS.secondaryLabel,
+    flex: 1,
+  },
+  topBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.separator,
+    marginLeft: 0,
+  },
   taskRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingLeft: 14,
-    paddingRight: 10,
+    paddingRight: 12,
     paddingVertical: 12,
-  },
-  rowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.separator,
   },
   taskBody: {
     flex: 1,
@@ -374,14 +416,77 @@ const styles = StyleSheet.create({
     color: COLORS.secondaryLabel,
     marginTop: 3,
   },
-  iconButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.groupedBackground,
+  chevron: {
+    marginLeft: 8,
+    marginTop: 4,
+  },
+  details: {
+    marginLeft: 52,
+    marginRight: 14,
+    paddingBottom: 14,
+  },
+  detailsText: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
+    lineHeight: 21,
+    marginBottom: 8,
+  },
+  detailLine: {
+    fontSize: 14,
+    color: COLORS.label,
+    marginTop: 2,
+  },
+  detailLabel: {
+    color: COLORS.secondaryLabel,
+    fontWeight: '600',
+  },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+  },
+  action: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: COLORS.groupedBackground,
+    borderRadius: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginLeft: 5,
+  },
+  actionPrimary: {
+    backgroundColor: GREEN,
+  },
+  actionPrimaryText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+    marginLeft: 5,
+  },
+  completedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.separator,
+  },
+  completedText: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
     marginLeft: 6,
+  },
+  allDone: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   addRow: {
     flexDirection: 'row',
@@ -393,13 +498,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.primary,
     marginLeft: 12,
-  },
-  addInput: {
-    flex: 1,
-    fontSize: 16,
-    color: COLORS.label,
-    marginLeft: 12,
-    paddingVertical: 2,
   },
   hint: {
     flexDirection: 'row',

@@ -105,11 +105,16 @@ export async function setTaskDone(uid, task, done) {
   }
 }
 
-export async function addCustomTask(uid, stage, title) {
+// fields: { title, notes, stage, topic, placeId, dueDate ('YYYY-MM-DD' or null) }
+export async function addCustomTask(uid, fields) {
   const id = `custom-${Date.now()}`;
-  const task = { custom: true, stage, title: title.trim(), done: false };
+  const task = { custom: true, done: false, ...fields };
   await setDoc(doc(db, 'users', uid, 'checklistProgress', id), { ...task, createdAt: serverTimestamp() });
   return { id, ...task };
+}
+
+export async function updateCustomTask(uid, taskId, fields) {
+  await setDoc(doc(db, 'users', uid, 'checklistProgress', taskId), fields, { merge: true });
 }
 
 export async function deleteCustomTask(uid, taskId) {

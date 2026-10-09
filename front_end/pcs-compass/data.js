@@ -141,7 +141,9 @@ export const CONTACTS = [
 //   plan: "Prime" | "Select"        efmp: "Enrolled" | "Pending" | "Not Enrolled"
 //   respite: true (only if respite care matters to them, 3+ out of 5)
 //   place: "public" | "private" | "provider" | "respite" | "aba" -- repeated for each chosen place of that kind
-// {child}, {base}, {mtf}, {efmpPhone}, {place} get filled in.
+// topic: "efmp" | "school" | "medical" | "move" (place tasks are grouped under the place instead)
+// details: shown when you tap a task to expand it.
+// {child}, {base}, {mtf}, {efmpPhone}, {sloPhone}, {place} get filled in.
 // source: where the rule or advice comes from (checked October 2026).
 const SRC = {
     efmp: "https://ffr.cnic.navy.mil/Family-Readiness/Fleet-And-Family-Support-Program/Work-and-Family-Life/Exceptional-Family-Member-Program/EFMP-Enrollment-Process/",
@@ -159,39 +161,39 @@ const SRC = {
 
 export const CHECKLIST_TASKS = [
     // Every move
-    { id: "efmp-update", stage: "pre", days: -90, efmp: "Enrolled", title: "Start updating {child}'s EFMP enrollment (the Navy says begin up to 12 months before a PCS)", source: SRC.efmp },
-    { id: "slo", stage: "pre", days: -60, title: "Contact the School Liaison Officer at {base} about schools and IEP services", source: SRC.slo },
-    { id: "records", stage: "pre", days: -45, title: "Get copies of {child}'s school records, IEP or 504 plan, and latest evaluations to hand-carry", source: SRC.iepMove },
-    { id: "referrals", stage: "pre", days: -30, title: "Call your TRICARE contractor to move active referrals to the new region (don't disenroll before you move)", source: SRC.tricarePcs },
-    { id: "refills", stage: "pre", days: -14, title: "Ask {child}'s doctors for enough prescription refills to get through the move" },
-    { id: "binder", stage: "pre", days: -7, title: "Pack a PCS binder to hand-carry: orders, medical and school records, EFMP forms", source: SRC.pcsGuide },
-    { id: "deers", stage: "arrival", days: 3, title: "Update your new home address in DEERS (milConnect or 1-800-538-9552)", source: SRC.tricarePcs },
-    { id: "efmp-checkin", stage: "arrival", days: 7, title: "Check in with the EFMP office at {base}: {efmpPhone}", source: SRC.efmp },
-    { id: "prime-transfer", stage: "arrival", days: 14, plan: "Prime", title: "Transfer TRICARE Prime enrollment and pick a primary care manager at {mtf} (you have 90 days after the move)", source: SRC.tricarePcs },
-    { id: "select-network", stage: "arrival", days: 14, plan: "Select", title: "Update TRICARE Select enrollment and find network providers near your new home (you have 90 days after the move)", source: SRC.tricarePcs },
-    { id: "iep-adopted", stage: "onboarding", days: 45, title: "Check that {child}'s new school has adopted the IEP or scheduled a new IEP meeting", source: SRC.iepLaw },
-    { id: "respite", stage: "onboarding", days: 60, respite: true, title: "Ask the EFMP office about Navy EFMP respite care hours", source: SRC.respite },
+    { id: "efmp-update", topic: "efmp", stage: "pre", days: -90, efmp: "Enrolled", title: "Start updating {child}'s EFMP enrollment (the Navy says begin up to 12 months before a PCS)", source: SRC.efmp, details: "If your sponsor could PCS in the next 12 months, the Navy recommends updating EFMP enrollment now so screening for the new duty station isn't delayed. Your EFMP coordinator can tell you which forms need updating." },
+    { id: "slo", topic: "school", stage: "pre", days: -60, title: "Contact the School Liaison Officer at {base} about schools and IEP services", source: SRC.slo, details: "School Liaison Officers help military families choose schools, transfer IEPs, and understand enrollment rules. The School Liaison Officer at {base}: {sloPhone}." },
+    { id: "records", topic: "school", stage: "pre", days: -45, title: "Get copies of {child}'s school records, IEP or 504 plan, and latest evaluations to hand-carry", source: SRC.iepMove, details: "Military OneSource recommends bringing copies of your child's records, including the IEP or 504 plan, to the new school. The new school can use them until the official records arrive." },
+    { id: "referrals", topic: "medical", stage: "pre", days: -30, title: "Call your TRICARE contractor to move active referrals to the new region (don't disenroll before you move)", source: SRC.tricarePcs, details: "TRICARE says not to disenroll before you move. Your coverage continues until your enrollment transfer is done. Call your current regional contractor before the move and ask them to send active referrals to the new region." },
+    { id: "refills", topic: "medical", stage: "pre", days: -14, title: "Ask {child}'s doctors for enough prescription refills to get through the move", details: "Ask each prescriber how to get enough medication to cover the trip and your first weeks at the new base, before you have a new doctor there." },
+    { id: "binder", topic: "move", stage: "pre", days: -7, title: "Pack a PCS binder to hand-carry: orders, medical and school records, EFMP forms", source: SRC.pcsGuide, details: "The MyNavy HR PCS Guide recommends a binder with orders, medical, dental, and school records, and EFMP forms that you carry with you instead of shipping." },
+    { id: "deers", topic: "medical", stage: "arrival", days: 3, title: "Update your new home address in DEERS (milConnect or 1-800-538-9552)", source: SRC.tricarePcs, details: "Use your physical address, not a P.O. box. Updating DEERS doesn't transfer your TRICARE enrollment by itself, so do that step too." },
+    { id: "efmp-checkin", topic: "efmp", stage: "arrival", days: 7, title: "Check in with the EFMP office at {base}: {efmpPhone}", source: SRC.efmp, details: "The Fleet & Family Support Center runs EFMP family support at {base}. They can connect you with local resources and respite care." },
+    { id: "prime-transfer", topic: "medical", stage: "arrival", days: 14, plan: "Prime", title: "Transfer TRICARE Prime enrollment and pick a primary care manager at {mtf} (you have 90 days after the move)", source: SRC.tricarePcs, details: "TRICARE gives you 90 days from the move to update your enrollment. Call the regional contractor to transfer Prime and choose a new primary care manager." },
+    { id: "select-network", topic: "medical", stage: "arrival", days: 14, plan: "Select", title: "Update TRICARE Select enrollment and find network providers near your new home (you have 90 days after the move)", source: SRC.tricarePcs, details: "TRICARE gives you 90 days from the move to update your enrollment. Network providers cost less with TRICARE Select than non-network ones." },
+    { id: "iep-adopted", topic: "school", stage: "onboarding", days: 45, title: "Check that {child}'s new school has adopted the IEP or scheduled a new IEP meeting", source: SRC.iepLaw, details: "Under federal law (IDEA), the new school has to provide services comparable to the old IEP until it adopts that IEP or writes a new one, within a reasonable amount of time." },
+    { id: "respite", topic: "efmp", stage: "onboarding", days: 60, respite: true, title: "Ask the EFMP office about Navy EFMP respite care hours", source: SRC.respite, details: "The Navy EFMP Respite Care Program gives eligible families respite care hours. Child Care Aware of America checks eligibility: 1-800-424-2246 ext. 317." },
 
     // EFMP still pending
-    { id: "efmp-followup", stage: "pre", days: -75, efmp: "Pending", title: "Follow up with your EFMP coordinator on {child}'s pending enrollment", source: SRC.efmp },
-    { id: "efmp-forms-check", stage: "pre", days: -60, efmp: "Pending", title: "Make sure the doctor finished DD Form 2792 and the school finished DD Form 2792-1", source: SRC.forms },
+    { id: "efmp-followup", topic: "efmp", stage: "pre", days: -75, efmp: "Pending", title: "Follow up with your EFMP coordinator on {child}'s pending enrollment", source: SRC.efmp, details: "Ask your EFMP coordinator what's still missing from the enrollment packet so it doesn't hold up the move." },
+    { id: "efmp-forms-check", topic: "efmp", stage: "pre", days: -60, efmp: "Pending", title: "Make sure the doctor finished DD Form 2792 and the school finished DD Form 2792-1", source: SRC.forms, details: "A doctor fills out the medical sections of DD Form 2792, and the school fills out DD Form 2792-1. The 2792-1 needs a current IEP attached." },
 
     // Not enrolled in EFMP yet
-    { id: "efmp-start", stage: "pre", days: -90, efmp: "Not Enrolled", title: "Ask your EFMP coordinator how to enroll {child}", source: SRC.efmp },
-    { id: "dd2792", stage: "pre", days: -75, efmp: "Not Enrolled", title: "Have {child}'s doctor fill out DD Form 2792 (medical summary)", source: SRC.forms },
-    { id: "dd2792-1", stage: "pre", days: -75, efmp: "Not Enrolled", title: "Have {child}'s school fill out DD Form 2792-1 and attach the current IEP", source: SRC.forms },
-    { id: "efmp-submit", stage: "pre", days: -60, efmp: "Not Enrolled", title: "Turn in the EFMP enrollment packet to your EFMP coordinator", source: SRC.efmp },
+    { id: "efmp-start", topic: "efmp", stage: "pre", days: -90, efmp: "Not Enrolled", title: "Ask your EFMP coordinator how to enroll {child}", source: SRC.efmp, details: "EFMP enrollment is how the Navy checks that your next duty station can support {child}'s needs. Your EFMP coordinator will walk you through the forms." },
+    { id: "dd2792", topic: "efmp", stage: "pre", days: -75, efmp: "Not Enrolled", title: "Have {child}'s doctor fill out DD Form 2792 (medical summary)", source: SRC.forms, details: "You fill in the family information. A doctor, physician assistant, or nurse practitioner completes the medical sections." },
+    { id: "dd2792-1", topic: "efmp", stage: "pre", days: -75, efmp: "Not Enrolled", title: "Have {child}'s school fill out DD Form 2792-1 and attach the current IEP", source: SRC.forms, details: "You fill in items 1 to 7. School or early intervention staff complete the rest. Attach a current IEP (or IFSP for younger kids)." },
+    { id: "efmp-submit", topic: "efmp", stage: "pre", days: -60, efmp: "Not Enrolled", title: "Turn in the EFMP enrollment packet to your EFMP coordinator", source: SRC.efmp, details: "Turn in both forms to your EFMP coordinator. They'll tell you if anything else is needed." },
 
     // For each place they choose on the map
-    { id: "send-school", stage: "pre", days: -21, place: "public", title: "Send {child}'s records and IEP to {place}", source: SRC.compact },
-    { id: "enroll-public", stage: "arrival", days: 3, place: "public", title: "Enroll at {place} using your hand-carried records (the Interstate Compact allows this)", source: SRC.compact },
-    { id: "comparable", stage: "onboarding", days: 30, place: "public", title: "Ask {place} how they'll provide services comparable to the current IEP until a new one is in place", source: SRC.iepLaw },
-    { id: "private-ask", stage: "pre", days: -60, place: "private", title: "Ask {place} what support they can offer (private schools don't have to follow IEPs)", source: SRC.iepMove },
-    { id: "private-apply", stage: "pre", days: -45, place: "private", title: "Ask {place} about applications, tuition, and a visit day" },
-    { id: "send-private", stage: "pre", days: -21, place: "private", title: "Send {child}'s records to {place}" },
-    { id: "provider-call", stage: "pre", days: -30, place: "provider", title: "Call {place}: ask if they're taking new patients and how long the wait is" },
-    { id: "send-provider", stage: "pre", days: -21, place: "provider", title: "Send records packet to {place}" },
-    { id: "provider-referral", stage: "arrival", days: 10, place: "provider", plan: "Prime", title: "Make sure a referral is on file for {place} (Prime needs referrals for specialty care)", source: SRC.referrals },
-    { id: "aba-referral", stage: "pre", days: -30, place: "aba", title: "For ABA at {place}: ask {child}'s diagnosing provider for an Autism Care Demonstration referral (renewed every 2 years)", source: SRC.autism },
-    { id: "respite-call", stage: "pre", days: -45, place: "respite", title: "Call {place} about Navy EFMP respite care (eligibility: Child Care Aware, 1-800-424-2246 ext. 317)", source: SRC.respite }
+    { id: "send-school", stage: "pre", days: -21, place: "public", title: "Send {child}'s records and IEP to {place}", source: SRC.compact, details: "Ask the school how they want records sent, and keep your hand-carried copies." },
+    { id: "enroll-public", stage: "arrival", days: 3, place: "public", title: "Enroll at {place} using your hand-carried records (the Interstate Compact allows this)", source: SRC.compact, details: "Under the Interstate Compact for military children, schools can enroll your child using unofficial, hand-carried records while the official ones are on the way." },
+    { id: "comparable", stage: "onboarding", days: 30, place: "public", title: "Ask {place} how they'll provide services comparable to the current IEP until a new one is in place", source: SRC.iepLaw, details: "Under federal law (IDEA), the school has to provide services comparable to the current IEP until it adopts that IEP or writes a new one." },
+    { id: "private-ask", stage: "pre", days: -60, place: "private", title: "Ask {place} what support they can offer (private schools don't have to follow IEPs)", source: SRC.iepMove, details: "Private schools don't have to follow IEPs. Ask what accommodations and support they offer before you apply." },
+    { id: "private-apply", stage: "pre", days: -45, place: "private", title: "Ask {place} about applications, tuition, and a visit day", details: "Ask about application deadlines, tuition, and whether they offer a visit or shadow day." },
+    { id: "send-private", stage: "pre", days: -21, place: "private", title: "Send {child}'s records to {place}", details: "Ask the school which records they need for the application." },
+    { id: "provider-call", stage: "pre", days: -30, place: "provider", title: "Call {place}: ask if they're taking new patients and how long the wait is", details: "Ask whether they accept your TRICARE plan, if they're taking new patients, and how long the wait is for a first visit." },
+    { id: "send-provider", stage: "pre", days: -21, place: "provider", title: "Send records packet to {place}", details: "Ask which records they need before the first visit, like evaluations, care plans, and a medication list." },
+    { id: "provider-referral", stage: "arrival", days: 10, place: "provider", plan: "Prime", title: "Make sure a referral is on file for {place} (Prime needs referrals for specialty care)", source: SRC.referrals, details: "TRICARE Prime needs a referral from your primary care manager for most specialty care. Referrals from your old region can be moved over before you PCS." },
+    { id: "aba-referral", stage: "pre", days: -30, place: "aba", title: "For ABA at {place}: ask {child}'s diagnosing provider for an Autism Care Demonstration referral (renewed every 2 years)", source: SRC.autism, details: "TRICARE's Autism Care Demonstration needs a referral from the provider who diagnosed autism. A new referral is needed every 2 years, and ABA is approved 6 months at a time." },
+    { id: "respite-call", stage: "pre", days: -45, place: "respite", title: "Call {place} about Navy EFMP respite care (eligibility: Child Care Aware, 1-800-424-2246 ext. 317)", source: SRC.respite, details: "The Planning Council hires and trains respite caregivers for Navy and Air Force EFMP families in Hampton Roads." }
 ];
