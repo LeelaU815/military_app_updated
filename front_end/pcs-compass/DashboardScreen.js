@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { getCurrentUser, loadProfile } from './storage';
 import { MONTH_NAMES, installationName, disabilityLabel, displayAge } from './constants';
+import { estimatedGrade } from './scoring';
 import AccountButton from './components/AccountButton';
 import { COLORS } from './theme';
 
@@ -34,25 +35,40 @@ function formatDate(month, day, year) {
   return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
 }
 
-function ListRow({ icon, color, label, value, onPress, last }) {
+function gradeText(grade) {
+  if (grade === null || grade > 12) return null;
+  if (grade < 0) return 'Pre-K';
+  if (grade === 0) return 'Kindergarten';
+  const suffix = grade === 1 ? 'st' : grade === 2 ? 'nd' : grade === 3 ? 'rd' : 'th';
+  return `${grade}${suffix} grade`;
+}
+
+const EFMP_COLORS = { Enrolled: '#34C759', Pending: '#FF9500', 'Not Enrolled': '#FF3B30' };
+
+// Five little bars for a 1-5 rating.
+function Meter({ value }) {
   return (
-    <TouchableOpacity style={styles.listRow} onPress={onPress} disabled={!onPress} activeOpacity={0.6}>
-      {icon && (
-        <View style={[styles.iconSquare, { backgroundColor: color }]}>
-          <Ionicons name={icon} size={17} color={COLORS.white} />
-        </View>
-      )}
-      <View style={[styles.listRowBody, !last && styles.listRowBorder]}>
-        <Text style={styles.listLabel}>{label}</Text>
-        {!!value && <Text style={styles.listValue} numberOfLines={1}>{value}</Text>}
-        {onPress && <Ionicons name="chevron-forward" size={17} color={COLORS.tertiaryLabel} />}
-      </View>
-    </TouchableOpacity>
+    <View style={styles.meter}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <View key={n} style={[styles.meterBar, n <= (value || 0) && styles.meterBarOn]} />
+      ))}
+    </View>
+  );
+}
+
+function Stat({ label, children }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statLabel}>{label}</Text>
+      {children}
+    </View>
   );
 }
 
 export default function DashboardScreen({ navigation }) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const columns = width >= 768 ? 6 : 3;
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -135,6 +151,10 @@ export default function DashboardScreen({ navigation }) {
 
   const installationDisplay = installationName(profile.installation);
   const age = displayAge(profile);
+  const grade = gradeText(estimatedGrade(profile));
+  const firstName = (profile.name || '').trim().split(' ')[0] || 'Family member';
+  const initials = (profile.name || '?').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+  const tileWidth = (width - 32 - (columns - 1) * 10) / columns;
 
   return (
     <ScrollView
@@ -166,27 +186,62 @@ export default function DashboardScreen({ navigation }) {
       </LinearGradient>
 
       <Text style={styles.sectionHeader}>QUICK ACCESS</Text>
-      <View style={styles.group}>
-        {QUICK_ACTIONS.map((action, i) => (
-          <ListRow
+      <View style={styles.tiles}>
+        {QUICK_ACTIONS.map((action) => (
+          <TouchableOpacity
             key={action.tab}
-            icon={action.icon}
-            color={action.color}
-            label={action.label}
+            style={[styles.tile, { width: tileWidth }]}
             onPress={() => navigation.navigate(action.tab)}
-            last={i === QUICK_ACTIONS.length - 1}
-          />
+            activeOpacity={0.7}
+          >
+            <View style={[styles.tileIcon, { backgroundColor: action.color }]}>
+              <Ionicons name={action.icon} size={20} color={COLORS.white} />
+            </View>
+            <Text style={styles.tileLabel} numberOfLines={2}>{action.label}</Text>
+          </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.sectionHeader}>{(profile.name || 'FAMILY MEMBER').toUpperCase()}</Text>
-      <View style={styles.group}>
-        <ListRow label="Age" value={age} />
-        <ListRow label="Needs" value={disabilityLabel(profile)} />
-        <ListRow label="Coverage" value={profile.insurance ? `TRICARE ${profile.insurance}` : 'Not set'} />
-        <ListRow label="EFMP" value={profile.efmpStatus} />
-        <ListRow label="View full profile" onPress={() => navigation.navigate('Profile')} last />
-      </View>
+      <Text style={styles.sectionHeader}>{`${firstName}'s overview`.toUpperCase()}</Text>
+      <TouchableOpacity style={styles.overview} onPress={() => navigation.navigate('Profile')} activeOpacity={0.8}>
+        <View style={styles.overviewTop}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.overviewName}>{profile.name}</Text>
+            <Text style={styles.overviewSub}>
+              {[age && `Age ${age}`, grade].filter(Boolean).join('  ·  ') || 'Profile'}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.tertiaryLabel} />
+        </View>
+
+        <View style={styles.needsPill}>
+          <Ionicons name="heart" size={15} color={COLORS.primary} />
+          <Text style={styles.needsText}>{disabilityLabel(profile) || 'Needs not set'}</Text>
+        </View>
+
+        <View style={styles.statRow}>
+          <Stat label="TRICARE">
+            <Text style={styles.statValue}>{profile.insurance || 'Not set'}</Text>
+          </Stat>
+          <Stat label="EFMP">
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, { backgroundColor: EFMP_COLORS[profile.efmpStatus] || COLORS.tertiaryLabel }]} />
+              <Text style={styles.statValue}>{profile.efmpStatus || 'Not set'}</Text>
+            </View>
+          </Stat>
+        </View>
+        <View style={styles.statRow}>
+          <Stat label="IEP / 504">
+            <Meter value={profile.iepImportance} />
+          </Stat>
+          <Stat label="RESPITE CARE">
+            <Meter value={profile.respiteImportance} />
+          </Stat>
+        </View>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -305,47 +360,129 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginHorizontal: 32,
   },
-  group: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    overflow: 'hidden',
-  },
-  listRow: {
+  tiles: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 16,
+    flexWrap: 'wrap',
+    marginHorizontal: 16,
+    gap: 10,
   },
-  iconSquare: {
-    width: 29,
-    height: 29,
-    borderRadius: 7,
+  tile: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: 12,
+    minHeight: 92,
+    justifyContent: 'space-between',
+  },
+  tileIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
   },
-  listRowBody: {
-    flex: 1,
+  tileLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.label,
+    marginTop: 10,
+  },
+  overview: {
+    backgroundColor: COLORS.white,
+    borderRadius: 18,
+    marginHorizontal: 16,
+    padding: 16,
+  },
+  overviewTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingRight: 14,
-    minHeight: 46,
   },
-  listRowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.separator,
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
   },
-  listLabel: {
-    flex: 1,
-    fontSize: 17,
+  avatarText: {
+    color: COLORS.white,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  overviewName: {
+    fontSize: 20,
+    fontWeight: '700',
     color: COLORS.label,
   },
-  listValue: {
-    fontSize: 17,
+  overviewSub: {
+    fontSize: 15,
     color: COLORS.secondaryLabel,
-    marginLeft: 12,
-    maxWidth: '60%',
-    textAlign: 'right',
+    marginTop: 2,
+  },
+  needsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.groupedBackground,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 16,
+  },
+  needsText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.label,
+    marginLeft: 8,
+  },
+  statRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 10,
+  },
+  stat: {
+    flex: 1,
+    backgroundColor: COLORS.groupedBackground,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    color: COLORS.secondaryLabel,
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: COLORS.label,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  meter: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  meterBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.fill,
+  },
+  meterBarOn: {
+    backgroundColor: COLORS.primary,
   },
 });
