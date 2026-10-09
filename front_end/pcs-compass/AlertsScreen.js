@@ -1,18 +1,46 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking, Switch } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ALERT_GROUPS } from './alerts';
-import { refreshAlerts } from './reminders';
+import { refreshAlerts, loadNotificationSettings, saveNotificationSettings } from './reminders';
 import { notificationStatus, askForNotifications } from './notifications';
+import ChoiceRow from './components/ChoiceRow';
 import { COLORS } from './theme';
 
 // Everything that needs attention, grouped like Apple's Reminders: Today, This week, Coming up.
 // Alerts can't be swiped away; they disappear when the task is done or the day has passed.
 
 const GREEN = '#34C759';
+
+const HOURS = [
+  { value: 7, label: '7 AM' },
+  { value: 9, label: '9 AM' },
+  { value: 12, label: 'Noon' },
+  { value: 18, label: '6 PM' },
+];
+const LEADS = [
+  { value: 15, label: '15 min' },
+  { value: 30, label: '30 min' },
+  { value: 60, label: '1 hr' },
+  { value: 120, label: '2 hr' },
+  { value: 1440, label: '1 day' },
+];
+
+// One Settings-style row: colored icon, label, and a switch.
+function SwitchRow({ icon, color, label, value, onChange, border }) {
+  return (
+    <View style={[styles.settingRow, border && styles.settingBorder]}>
+      <View style={[styles.icon, { backgroundColor: color }]}>
+        <Ionicons name={icon} size={16} color={COLORS.white} />
+      </View>
+      <Text style={styles.settingLabel}>{label}</Text>
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: GREEN }} />
+    </View>
+  );
+}
 
 function AlertRow({ alert, onPress, last }) {
   return (
@@ -36,12 +64,20 @@ export default function AlertsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [alerts, setAlerts] = useState(null); // null = no finished profile yet
   const [permission, setPermission] = useState('unavailable');
+  const [settings, setSettings] = useState(null);
 
   const load = async () => {
-    const [result, status] = await Promise.all([refreshAlerts({ force: true }), notificationStatus()]);
+    const [result, status, s] = await Promise.all([refreshAlerts({ force: true }), notificationStatus(), loadNotificationSettings()]);
     setAlerts(result ? result.alerts : null);
     setPermission(status);
+    setSettings(s);
     setLoading(false);
+  };
+
+  const change = (key, value) => {
+    const next = { ...settings, [key]: value };
+    setSettings(next);
+    saveNotificationSettings(next).catch((error) => console.log(error));
   };
 
   useFocusEffect(
@@ -115,10 +151,45 @@ export default function AlertsScreen({ navigation }) {
         );
       })}
 
-      {alerts && permission === 'granted' && (
-        <Text style={styles.footnote}>
-          Reminders are on. You'll get one at 9 AM on each due date, an hour before appointments, and as your PCS date gets close.
-        </Text>
+      {permission === 'granted' && settings && (
+        <View>
+          <Text style={[styles.sectionHeader, { marginTop: 36 }]}>NOTIFICATION SETTINGS</Text>
+          <View style={styles.group}>
+            <SwitchRow icon="checkbox" color="#007AFF" label="Task due dates" value={settings.tasks} onChange={(v) => change('tasks', v)} />
+            {settings.tasks && (
+              <View style={styles.settingBorder}>
+                <Text style={styles.settingSub}>Remind me at</Text>
+                <View style={styles.choice}>
+                  <ChoiceRow options={HOURS} selected={settings.taskHour} onSelect={(v) => change('taskHour', v)} />
+                </View>
+                <View style={[styles.settingRow, styles.settingBorder, { paddingLeft: 16 }]}>
+                  <Text style={styles.settingLabel}>Also remind me the day before</Text>
+                  <Switch value={settings.dayBefore} onValueChange={(v) => change('dayBefore', v)} trackColor={{ true: GREEN }} />
+                </View>
+              </View>
+            )}
+          </View>
+
+          <View style={[styles.group, { marginTop: 16 }]}>
+            <SwitchRow icon="time" color="#AF52DE" label="Appointments" value={settings.events} onChange={(v) => change('events', v)} />
+            {settings.events && (
+              <View style={styles.settingBorder}>
+                <Text style={styles.settingSub}>How early</Text>
+                <View style={[styles.choice, { paddingBottom: 14 }]}>
+                  <ChoiceRow options={LEADS} selected={settings.eventLead} onSelect={(v) => change('eventLead', v)} />
+                </View>
+              </View>
+            )}
+          </View>
+
+          <View style={[styles.group, { marginTop: 16 }]}>
+            <SwitchRow icon="airplane" color="#FF3B30" label="PCS countdown" value={settings.pcs} onChange={(v) => change('pcs', v)} />
+            <SwitchRow icon="ellipse" color="#FF9500" label="Badge on app icon" value={settings.badge} onChange={(v) => change('badge', v)} border />
+          </View>
+          <Text style={styles.footnote}>
+            The PCS countdown reminds you 30, 14, 7, and 1 days before, and on the day. These settings are saved on this device. All-day appointments remind you at 8 AM that day.
+          </Text>
+        </View>
       )}
     </ScrollView>
   );
@@ -240,6 +311,33 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 13,
     marginTop: 2,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 14,
+    paddingRight: 16,
+    paddingVertical: 9,
+  },
+  settingBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.separator,
+  },
+  settingLabel: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.label,
+  },
+  settingSub: {
+    fontSize: 13,
+    color: COLORS.secondaryLabel,
+    marginTop: 10,
+    marginHorizontal: 16,
+  },
+  choice: {
+    marginHorizontal: 12,
+    marginTop: 8,
+    marginBottom: 12,
   },
   footnote: {
     fontSize: 13,

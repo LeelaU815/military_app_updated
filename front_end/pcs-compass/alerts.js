@@ -92,9 +92,22 @@ export function buildAlerts(profile, saved = {}, progress = {}, events = [], now
   return alerts.sort((a, b) => (groupOrder[a.group] - groupOrder[b.group]) || (a.rank - b.rank) || (a.sortTime - b.sortTime));
 }
 
+// What the notification settings in the Alerts tab start as. Saved per device (see reminders.js).
+export const DEFAULT_SETTINGS = {
+  tasks: true, // a reminder on each due date
+  taskHour: 9, // at this hour
+  dayBefore: false, // and one the day before
+  events: true, // appointments
+  eventLead: 60, // minutes before a timed appointment
+  pcs: true, // 30, 14, 7, 1 days before and on the day
+  badge: true, // red number on the app icon
+};
+
+const LEAD_TEXT = { 15: 'In 15 minutes', 30: 'In 30 minutes', 60: 'In 1 hour', 120: 'In 2 hours', 1440: 'Tomorrow' };
+
 // Phone notifications to schedule: { id, date, title, body, data }. Only future ones, soonest first.
 // iOS only keeps 64 scheduled notifications per app, so this stops at 60.
-export function buildReminders(profile, saved = {}, progress = {}, events = [], now = new Date()) {
+export function buildReminders(profile, saved = {}, progress = {}, events = [], now = new Date(), settings = DEFAULT_SETTINGS) {
   const reminders = [];
   const at = (day, hour, minute = 0) => {
     const d = new Date(day);
@@ -102,13 +115,18 @@ export function buildReminders(profile, saved = {}, progress = {}, events = [], 
     return d;
   };
 
-  buildChecklist(profile, saved, progress)
-    .filter((t) => !t.done && t.due)
-    .forEach((task) => {
-      reminders.push({ id: `task:${task.id}`, date: at(task.due, 9), title: 'Due today', body: task.title, data: { tab: 'AlertsTab' } });
-    });
+  if (settings.tasks) {
+    buildChecklist(profile, saved, progress)
+      .filter((t) => !t.done && t.due)
+      .forEach((task) => {
+        reminders.push({ id: `task:${task.id}`, date: at(task.due, settings.taskHour), title: 'Due today', body: task.title, data: { tab: 'AlertsTab' } });
+        if (settings.dayBefore) {
+          reminders.push({ id: `task-early:${task.id}`, date: at(new Date(task.due.getTime() - DAY), settings.taskHour), title: 'Due tomorrow', body: task.title, data: { tab: 'AlertsTab' } });
+        }
+      });
+  }
 
-  events.forEach((event) => {
+  (settings.events ? events : []).forEach((event) => {
     const [y, m, d] = event.date.split('-').map(Number);
     const day = new Date(y, m - 1, d);
     if (event.time) {
@@ -116,8 +134,8 @@ export function buildReminders(profile, saved = {}, progress = {}, events = [], 
       const start = at(day, h, min);
       reminders.push({
         id: `event:${event.id}`,
-        date: new Date(start.getTime() - 60 * 60000),
-        title: `In 1 hour: ${event.title}`,
+        date: new Date(start.getTime() - settings.eventLead * 60000),
+        title: `${LEAD_TEXT[settings.eventLead] || 'Soon'}: ${event.title}`,
         body: [formatTime(event.time), event.location].filter(Boolean).join(' · '),
         data: { tab: 'CalendarTab', date: event.date },
       });
@@ -127,12 +145,12 @@ export function buildReminders(profile, saved = {}, progress = {}, events = [], 
   });
 
   const pcs = pcsDate(profile);
-  if (pcs) {
+  if (pcs && settings.pcs) {
     const what = profile.pcsDateType === 'Timeframe' ? 'your PCS window opens' : 'PCS';
     [30, 14, 7, 1].forEach((days) => {
       reminders.push({
         id: `pcs:${days}`,
-        date: at(new Date(pcs.getTime() - days * DAY), 9),
+        date: at(new Date(pcs.getTime() - days * DAY), settings.taskHour),
         title: `${days} day${days === 1 ? '' : 's'} until ${what}`,
         body: 'Open PCS Compass to see what still needs doing.',
         data: { tab: 'AlertsTab' },

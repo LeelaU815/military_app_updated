@@ -1,5 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { getCurrentUser, loadProfile, loadSavedLocations, loadChecklistProgress, loadEvents } from './storage';
-import { buildAlerts, buildReminders, badgeCount } from './alerts';
+import { buildAlerts, buildReminders, badgeCount, DEFAULT_SETTINGS } from './alerts';
 import { scheduleReminders } from './notifications';
 
 // Keeps the Alerts tab badge and the scheduled phone notifications up to date.
@@ -7,6 +9,21 @@ import { scheduleReminders } from './notifications';
 
 let listeners = [];
 let lastRun = 0;
+
+// Notification settings live on this device, since the reminders are scheduled on this device.
+export async function loadNotificationSettings() {
+  try {
+    const saved = await AsyncStorage.getItem('notificationSettings');
+    return { ...DEFAULT_SETTINGS, ...(saved ? JSON.parse(saved) : {}) };
+  } catch (error) {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+export async function saveNotificationSettings(settings) {
+  await AsyncStorage.setItem('notificationSettings', JSON.stringify(settings));
+  return refreshAlerts({ force: true }); // reschedule with the new settings
+}
 
 export function subscribeToBadge(listener) {
   listeners.push(listener);
@@ -23,11 +40,12 @@ export async function refreshAlerts({ force = false } = {}) {
   try {
     const user = await getCurrentUser();
     if (!user) return null;
-    const [profile, saved, progress, events] = await Promise.all([
+    const [profile, saved, progress, events, settings] = await Promise.all([
       loadProfile(user.uid),
       loadSavedLocations(user.uid),
       loadChecklistProgress(user.uid),
       loadEvents(user.uid),
+      loadNotificationSettings(),
     ]);
     if (!profile || profile.status !== 'complete') {
       listeners.forEach((l) => l(0));
@@ -36,8 +54,9 @@ export async function refreshAlerts({ force = false } = {}) {
     const alerts = buildAlerts(profile, saved, progress, events);
     const badge = badgeCount(alerts);
     listeners.forEach((l) => l(badge));
-    scheduleReminders(buildReminders(profile, saved, progress, events), badge).catch((error) => console.log(error));
-    return { profile, saved, progress, events, alerts };
+    const reminders = buildReminders(profile, saved, progress, events, new Date(), settings);
+    scheduleReminders(reminders, settings.badge ? badge : 0).catch((error) => console.log(error));
+    return { profile, saved, progress, events, alerts, settings };
   } catch (error) {
     console.log(error);
     return null;
