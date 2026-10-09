@@ -162,31 +162,6 @@ export async function deleteEvent(uid, eventId) {
   await deleteDoc(doc(db, 'users', uid, 'events', eventId));
 }
 
-// Documents the family has ready, plus ones they added, at users/{uid}/documents/{docId}.
-export async function loadDocuments(uid) {
-  const snapshot = await getDocs(collection(db, 'users', uid, 'documents'));
-  const docs = {};
-  snapshot.forEach((d) => {
-    docs[d.id] = d.data();
-  });
-  return docs;
-}
-
-export async function setDocumentReady(uid, docId, have) {
-  await setDoc(doc(db, 'users', uid, 'documents', docId), { have, updatedAt: serverTimestamp() }, { merge: true });
-}
-
-// fields: { title, notes }. Pass an id to update an existing one.
-export async function saveCustomDocument(uid, fields, id) {
-  const docId = id || `doc-${Date.now()}`;
-  await setDoc(doc(db, 'users', uid, 'documents', docId), { ...fields, custom: true, updatedAt: serverTimestamp() }, { merge: true });
-  return docId;
-}
-
-export async function deleteCustomDocument(uid, docId) {
-  await deleteDoc(doc(db, 'users', uid, 'documents', docId));
-}
-
 // Turns Firebase error codes into something a parent can act on.
 export function authErrorMessage(error) {
   switch (error && error.code) {

@@ -157,9 +157,7 @@ const SRC = {
     iepLaw: "https://www.ecfr.gov/current/title-34/subtitle-B/chapter-III/part-300/subpart-D/subject-group-ECFR28b07e67452ed7a/section-300.323",
     slo: "https://www.npsk12.com/departments/interagency-collaboration-and-wraparound-services/support-for-military-connected-students-and-families/naval-station-norfolk-school-liaison-officer-slo-program",
     autism: "https://www.tricare.mil/autism",
-    respite: "https://theplanningcouncil.org/military-family-respite-care/",
-    register: "https://www.npsk12.com/register",
-    idCards: "https://www.tricare.mil/Plans/Eligibility/IDCards"
+    respite: "https://theplanningcouncil.org/military-family-respite-care/"
 };
 
 export const CHECKLIST_TASKS = [
@@ -201,29 +199,17 @@ export const CHECKLIST_TASKS = [
     { id: "respite-call", stage: "pre", days: -45, place: "respite", title: "Call {place} about Navy EFMP respite care (eligibility: Child Care Aware, 1-800-424-2246 ext. 317)", source: SRC.respite, details: "The Planning Council hires and trains respite caregivers for Navy and Air Force EFMP families in Hampton Roads." }
 ];
 
-// 8. Documents to gather for the move. The Documents tab builds each family's list from these.
-// group: military / school / medical. handCarry: the MyNavy HR PCS Guide says to carry it with you, not ship it.
-// Conditions work like the checklist: efmp (only when not enrolled yet), maxGrade, minAge, category.
-export const DOCUMENTS = [
-    { id: "orders", group: "military", handCarry: true, title: "PCS orders", source: SRC.pcsGuide, details: "Housing, TRICARE, and schools can ask for a copy. Keep copies in the binder you hand-carry." },
-    { id: "dd2792", group: "military", handCarry: true, efmp: "notEnrolled", title: "DD Form 2792 (Family Member Medical Summary)", source: SRC.forms, details: "{child}'s doctor fills this out for EFMP enrollment. Keep a copy of the finished form." },
-    { id: "dd2792-1", group: "military", handCarry: true, efmp: "notEnrolled", title: "DD Form 2792-1 (Special Education Summary)", source: SRC.forms, details: "{child}'s school fills this out for EFMP enrollment, with the current IEP attached. Keep a copy of the finished form." },
-    { id: "military-id", group: "military", minAge: 10, title: "{child}'s military ID card", source: SRC.idCards, details: "TRICARE says children need their own ID card at age 10. Bring it to every appointment and the pharmacy." },
-
-    { id: "birth-certificate", group: "school", title: "Birth certificate (original or certified copy)", source: SRC.register, details: "Virginia public schools need an original or certified birth certificate the first time a child enrolls in any Virginia public school." },
-    { id: "residency", group: "school", title: "Proof of your new address", source: SRC.register, details: "A lease, mortgage statement, or current utility bill with your new address. Virginia public schools ask for this when you register." },
-    { id: "physical", group: "school", maxGrade: 5, title: "School entrance physical (Virginia form MCH 213G)", source: SRC.register, details: "Required through grade 5. The physical must be done within the 12 months before {child} first enters a Virginia kindergarten or elementary school. The doctor can use form MCH 213G or their own form. If {child} is transferring, ask the old school to include it in the records." },
-    { id: "immunizations", group: "school", title: "Immunization record", source: SRC.register, details: "It has to show the month, day, and year of each shot. Under the Interstate Compact for military children, you have 30 days after enrolling to get any new shots the new state requires." },
-    { id: "iep", group: "school", handCarry: true, title: "Current IEP or 504 plan", source: SRC.iepMove, details: "Bring a copy to the new school. They can use it until the official records arrive." },
-    { id: "evaluations", group: "school", handCarry: true, title: "Latest evaluations and eligibility reports", source: SRC.iepMove, details: "The evaluations behind {child}'s IEP or 504 plan help the new school provide services right away." },
-    { id: "school-records", group: "school", handCarry: true, title: "Report cards and school records (copies)", source: SRC.compact, details: "Under the Interstate Compact, the new school can enroll {child} using copies you bring while the official records are sent." },
-
-    { id: "medical-records", group: "medical", handCarry: true, title: "Medical records", source: SRC.pcsGuide, details: "Ask each of {child}'s doctors and therapists for a copy, and keep it in the binder you hand-carry." },
-    { id: "dental-records", group: "medical", handCarry: true, title: "Dental records", source: SRC.pcsGuide, details: "Ask the dentist for a copy before you move." },
-    { id: "medications", group: "medical", title: "List of medications and doses", details: "New doctors and pharmacies will ask for it. Include allergies too." },
-    { id: "referrals", group: "medical", title: "Active TRICARE referrals and authorizations (copies)", source: SRC.tricarePcs, details: "Your regional contractor moves active referrals to the new region, but keep copies in case anything is missing." },
-    { id: "aba", group: "medical", category: "asd", title: "Autism Care Demonstration referral and ABA authorization", source: SRC.autism, details: "ABA through TRICARE needs a referral from the provider who diagnosed autism, renewed every 2 years." }
-];
+// 8. Document names the Documents tab suggests when you save something, by folder.
+// Each one is something an official source says you'll need for the move:
+// MyNavy HR PCS Guide (orders, medical, dental, and school records), Navy EFMP (DD 2792 / 2792-1),
+// TRICARE (child ID card at age 10, referrals, ABA referral), Norfolk Public Schools registration page
+// (birth certificate, proof of address, school physical, immunizations), Military OneSource (IEP / 504).
+export const DOCUMENT_SUGGESTIONS = {
+    military: ["PCS orders", "DD Form 2792", "DD Form 2792-1", "Military ID card"],
+    school: ["IEP", "504 plan", "Evaluation report", "Report card", "School records", "Birth certificate", "Proof of address", "School physical (MCH 213G)", "Immunization record"],
+    medical: ["Medical records", "Dental records", "Medication list", "TRICARE referral", "ABA authorization"],
+    other: []
+};
 
 // 9. School year dates for the Calendar, only from each district's own calendar or announcement.
 // Norfolk Public Schools isn't here yet -- couldn't find their 2026-27 dates on npsk12.com, only on

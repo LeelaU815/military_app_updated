@@ -15,13 +15,13 @@
 - [x] calendar (PCS date, task due dates, my appointments in users/{uid}/events, school year dates, add to the Calendar app)
 - [x] "next up" banner on home (next task + today's/tomorrow's appointment)
 - [x] alerts (overdue / due soon / appointments / PCS countdown, color-coded by urgency) + real reminders on the device, badge on the tab
-- [x] documents checklist (what to gather: IEP, DD 2792, birth certificate, physical, etc.), saved to users/{uid}/documents
+- [x] documents: store photos and PDFs on the device in folders (military, school, medical, other), view, share, suggested names
 
 ## later
 - [ ] reviews from other families (ratings + wait times) -- could use the existing `reports` collection pattern
 - [ ] real quality data: Virginia school accreditation, CMS hospital star ratings
 - [ ] google places api (address autocomplete, more places, ratings) -- needs billing + a locked-down key
-- [ ] document uploads (firebase storage, may need billing)
+- [ ] cloud backup for documents (firebase storage needs the blaze plan) so they sync between devices
 - [ ] data for the other 7 bases
 - [ ] school dates for Norfolk Public Schools + Chesapeake's last day once the districts post them
 - [ ] before android release: free google maps api key (iOS uses apple maps, no key)

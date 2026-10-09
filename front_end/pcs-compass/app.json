@@ -40,7 +40,15 @@
         {
           "color": "#173A5E"
         }
-      ]
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "PCS Compass lets you save photos of documents, like your child's IEP or orders.",
+          "cameraPermission": "PCS Compass lets you take photos of documents, like your child's IEP or orders."
+        }
+      ],
+      "expo-sharing"
     ]
   }
 }
