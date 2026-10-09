@@ -2,3 +2,7 @@ node_modules/
 .expo/
 dist/
 .env
+
+# made by "npx expo run:ios" / "expo prebuild" from app.json, so they stay out of git
+ios/
+android/
