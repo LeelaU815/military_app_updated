@@ -3,7 +3,9 @@
 ## next up
 - [x] scoring: TOPSIS ranking of schools and providers (fixed ideal, grade filter, "for my kid" filter)
 - [x] scoring: look up the home address's coordinates when the profile is saved (U.S. Census geocoder) so "distance from house" works
-- [ ] map & discovery screen (map pins, type tabs, "for my kid" vs "show all" toggle, choose a location)
+- [x] map & discovery screen (map pins, type tabs, "for my kid" vs "show all" toggle, details)
+- [ ] "choose this location" on the map, saved to users/{uid}/savedLocations
+- [x] account button on home (profile + log out)
 - [ ] checklists (pre-move / arrival / onboarding + EFMP tasks), saved to users/{uid}/checklistProgress
 - [ ] chosen locations saved to users/{uid}/savedLocations, added to contacts + tasks
 - [ ] contacts screen (verified contacts + chosen places + custom contacts, tap to call)
@@ -16,3 +18,4 @@
 - [ ] google places api (address autocomplete, more places, ratings) -- needs billing + a locked-down key
 - [ ] document uploads (firebase storage, may need billing)
 - [ ] data for the other 7 bases
+- [ ] before android release: free google maps api key (iOS uses apple maps, no key)

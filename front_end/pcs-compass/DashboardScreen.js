@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { getCurrentUser, loadProfile } from './storage';
 import { MONTH_NAMES, installationName, disabilityLabel, displayAge } from './constants';
+import AccountButton from './components/AccountButton';
 import { COLORS } from './theme';
 
 const QUICK_ACTIONS = [
@@ -77,6 +78,9 @@ export default function DashboardScreen({ navigation }) {
     const isDraft = !!profile;
     return (
       <View style={styles.emptyState}>
+        <View style={styles.emptyAccount}>
+          <AccountButton navigation={navigation} color={COLORS.primary} showProfile={false} />
+        </View>
         <Text style={styles.title}>Dashboard</Text>
         <Text style={styles.subtitle}>
           {isDraft
@@ -118,9 +122,12 @@ export default function DashboardScreen({ navigation }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
       <LinearGradient colors={[COLORS.gradientTop, COLORS.gradientBottom]} style={styles.header}>
-        <Text style={styles.welcomeText}>
-          Welcome back{profile.familyLastName ? `, ${profile.familyLastName} family` : ''}
-        </Text>
+        <View style={styles.headerRow}>
+          <Text style={[styles.welcomeText, { flex: 1 }]}>
+            Welcome back{profile.familyLastName ? `, ${profile.familyLastName} family` : ''}
+          </Text>
+          <AccountButton navigation={navigation} />
+        </View>
         {installationDisplay && (
           <Text style={styles.installationText}>{installationDisplay} bound</Text>
         )}
@@ -233,6 +240,15 @@ const styles = StyleSheet.create({
     paddingTop: 56,
     paddingHorizontal: 24,
     paddingBottom: 24,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  emptyAccount: {
+    position: 'absolute',
+    top: 56,
+    right: 20,
   },
   welcomeText: {
     color: COLORS.subtle,
