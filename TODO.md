@@ -15,7 +15,7 @@
 - [x] calendar (PCS date, task due dates, my appointments in users/{uid}/events, school year dates, add to the Calendar app)
 - [x] "next up" banner on home (next task + today's/tomorrow's appointment)
 - [x] alerts (overdue / due soon / appointments / PCS countdown, color-coded by urgency) + real reminders on the device, badge on the tab
-- [ ] documents checklist (what to gather: IEP, DD 2792, etc.)
+- [x] documents checklist (what to gather: IEP, DD 2792, birth certificate, physical, etc.), saved to users/{uid}/documents
 
 ## later
 - [ ] reviews from other families (ratings + wait times) -- could use the existing `reports` collection pattern

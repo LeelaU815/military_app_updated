@@ -16,6 +16,7 @@ import TaskEditorScreen from './TaskEditorScreen';
 import ContactDetailsScreen from './ContactDetailsScreen';
 import ContactEditorScreen from './ContactEditorScreen';
 import EventEditorScreen from './EventEditorScreen';
+import DocumentEditorScreen from './DocumentEditorScreen';
 import ChecklistsScreen from './ChecklistsScreen';
 import DocumentsScreen from './DocumentsScreen';
 import CalendarScreen from './CalendarScreen';
@@ -96,6 +97,7 @@ export default function App() {
         <Stack.Screen name="ContactDetails" component={ContactDetailsScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="ContactEditor" component={ContactEditorScreen} options={{ presentation: 'modal' }} />
         <Stack.Screen name="EventEditor" component={EventEditorScreen} options={{ presentation: 'modal' }} />
+        <Stack.Screen name="DocumentEditor" component={DocumentEditorScreen} options={{ presentation: 'modal' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
