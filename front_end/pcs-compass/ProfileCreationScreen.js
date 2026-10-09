@@ -34,7 +34,7 @@ import WheelDatePicker from './components/WheelDatePicker';
 import ChoiceRow from './components/ChoiceRow';
 import ScaleSelector from './components/ScaleSelector';
 import Dropdown from './components/Dropdown';
-import DraggableRankList from './components/DraggableRankList';
+import RankList from './components/RankList';
 import { COLORS } from './theme';
 
 const TOTAL_STEPS = PROFILE_STEPS;
@@ -139,7 +139,7 @@ export default function ProfileCreationScreen({ navigation }) {
   const handleFinish = async () => {
     setSaving(true);
     try {
-      // Save the ranking even if they never dragged anything (the default order is still a ranking).
+      // Save the ranking even if they never moved anything (the default order is still a ranking).
       const { draftStep, updatedAt, ...rest } = data;
       const { profile, found } = await withHomeLocation({
         ...rest,
@@ -299,9 +299,8 @@ export default function ProfileCreationScreen({ navigation }) {
         return (
           <>
             <Question number={11}>When finding resources, rank your priorities</Question>
-            <Text style={styles.helperText}>Press and drag to reorder, top = most important.</Text>
-            <DraggableRankList
-              key={data.residentialDecided}
+            <Text style={styles.helperText}>Use the arrows to move things up or down. Top = most important.</Text>
+            <RankList
               items={priorityItems}
               onReorder={(order) => update('priorityOrder', order)}
             />

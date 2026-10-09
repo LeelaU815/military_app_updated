@@ -36,7 +36,7 @@ import WheelDatePicker from './components/WheelDatePicker';
 import ChoiceRow from './components/ChoiceRow';
 import ScaleSelector from './components/ScaleSelector';
 import Dropdown from './components/Dropdown';
-import DraggableRankList from './components/DraggableRankList';
+import RankList from './components/RankList';
 import { COLORS } from './theme';
 
 function formatDate(month, day, year) {
@@ -324,9 +324,9 @@ export default function ProfileScreen({ navigation }) {
             )}
 
             <Text style={styles.fieldLabel}>Priority ranking</Text>
-            <Text style={styles.helperText}>Press and drag to reorder, top = most important.</Text>
-            <DraggableRankList
-              key={draftData.residentialDecided}
+            <Text style={styles.helperText}>Use the arrows to move things up or down. Top = most important.</Text>
+            <RankList
+              dark
               items={priorityItems}
               onReorder={(order) => update('priorityOrder', order)}
             />

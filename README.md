@@ -12,7 +12,7 @@ everything lives in `front_end/pcs-compass` (expo app)
 - `firebaseConfig.js` - connects to Firebase using the keys in `.env`
 - `firestore.rules` - database security rules (each family can only see their own profile)
 - `scoring.js` - area scoring (not done yet)
-- `components/` - date picker, drag to rank list, and the shared form controls (ChoiceRow, ScaleSelector, Dropdown)
+- `components/` - date picker, priority ranking list (up/down arrows), and the shared form controls (ChoiceRow, ScaleSelector, Dropdown)
 
 ## firebase setup (one time)
 1. in the Firebase console, open the project and add a **Web app** (Project settings > General > Your apps)
