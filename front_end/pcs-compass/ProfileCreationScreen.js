@@ -10,8 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCurrentUser, loadProfile, saveProfile } from './storage';
 import { withHomeLocation } from './geocode';
 import {
@@ -73,6 +72,7 @@ export default function ProfileCreationScreen({ navigation }) {
   const [uid, setUid] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Pick up where they left off if they saved a draft earlier.
   useEffect(() => {
@@ -166,7 +166,7 @@ export default function ProfileCreationScreen({ navigation }) {
             <TextInput
               style={styles.input}
               placeholder="e.g. Reynolds"
-              placeholderTextColor={COLORS.placeholder}
+              placeholderTextColor={COLORS.tertiaryLabel}
               value={data.familyLastName}
               onChangeText={(t) => update('familyLastName', t)}
             />
@@ -175,7 +175,7 @@ export default function ProfileCreationScreen({ navigation }) {
             <TextInput
               style={styles.input}
               placeholder="e.g. Mia Reynolds"
-              placeholderTextColor={COLORS.placeholder}
+              placeholderTextColor={COLORS.tertiaryLabel}
               value={data.name}
               onChangeText={(t) => update('name', t)}
             />
@@ -203,7 +203,7 @@ export default function ProfileCreationScreen({ navigation }) {
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
                 placeholder="Please describe"
-                placeholderTextColor={COLORS.placeholder}
+                placeholderTextColor={COLORS.tertiaryLabel}
                 value={data.genderOther}
                 onChangeText={(t) => update('genderOther', t)}
               />
@@ -224,7 +224,7 @@ export default function ProfileCreationScreen({ navigation }) {
               <TextInput
                 style={[styles.input, { marginTop: 8 }]}
                 placeholder="Please describe"
-                placeholderTextColor={COLORS.placeholder}
+                placeholderTextColor={COLORS.tertiaryLabel}
                 value={data.disabilityOther}
                 onChangeText={(t) => update('disabilityOther', t)}
               />
@@ -260,28 +260,28 @@ export default function ProfileCreationScreen({ navigation }) {
                 <TextInput
                   style={styles.input}
                   placeholder="Street address"
-                  placeholderTextColor={COLORS.placeholder}
+                  placeholderTextColor={COLORS.tertiaryLabel}
                   value={data.address}
                   onChangeText={(t) => update('address', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="City"
-                  placeholderTextColor={COLORS.placeholder}
+                  placeholderTextColor={COLORS.tertiaryLabel}
                   value={data.city}
                   onChangeText={(t) => update('city', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="State"
-                  placeholderTextColor={COLORS.placeholder}
+                  placeholderTextColor={COLORS.tertiaryLabel}
                   value={data.state}
                   onChangeText={(t) => update('state', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="Zip code"
-                  placeholderTextColor={COLORS.placeholder}
+                  placeholderTextColor={COLORS.tertiaryLabel}
                   value={data.zip}
                   onChangeText={(t) => update('zip', t.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
@@ -385,18 +385,14 @@ export default function ProfileCreationScreen({ navigation }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <LinearGradient colors={[COLORS.gradientTop, COLORS.gradientBottom]} style={styles.header}>
-        <View style={styles.badgeRow}>
-          <Ionicons name="compass-outline" size={18} color={COLORS.gold} />
-          <Text style={styles.badgeText}>PCS Compass</Text>
-          <TouchableOpacity style={styles.saveLater} onPress={handleSaveForLater}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.topBar}>
+          <Text style={styles.stepText}>Step {step} of {TOTAL_STEPS}</Text>
+          <TouchableOpacity onPress={handleSaveForLater} hitSlop={10}>
             <Text style={styles.saveLaterText}>Save & finish later</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.headerTitle}>Let's build your family profile</Text>
-        <Text style={styles.headerSubtitle}>
-          Step {step} of {TOTAL_STEPS} · {STEP_TITLES[step - 1]}
-        </Text>
+        <Text style={styles.headerTitle}>{STEP_TITLES[step - 1]}</Text>
         <View style={styles.progressTrack}>
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <View
@@ -405,13 +401,13 @@ export default function ProfileCreationScreen({ navigation }) {
             />
           ))}
         </View>
-      </LinearGradient>
+      </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {renderStepContent()}
       </ScrollView>
 
-      <View style={styles.navRow}>
+      <View style={[styles.navRow, { paddingBottom: Math.max(insets.bottom, 14) }]}>
         <TouchableOpacity style={styles.navButtonSecondary} onPress={handleBack}>
           <Text style={styles.navButtonSecondaryText}>Back</Text>
         </TouchableOpacity>
@@ -438,124 +434,109 @@ function Question({ number, style, children }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.groupedBackground,
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  saveLater: {
-    marginLeft: 'auto',
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: COLORS.groupedBackground,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  stepText: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
   },
   saveLaterText: {
-    color: COLORS.white,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  questionNumber: {
     color: COLORS.primary,
-    fontWeight: '700',
-  },
-  header: {
-    paddingTop: 56,
-    paddingHorizontal: 24,
-    paddingBottom: 20,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  badgeText: {
-    color: COLORS.gold,
-    fontSize: 14,
-    fontWeight: '700',
-    marginLeft: 8,
-    letterSpacing: 0.5,
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginBottom: 6,
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: COLORS.mist,
-    marginBottom: 14,
+    fontSize: 34,
+    fontWeight: '700',
+    color: COLORS.label,
+    marginTop: 6,
+    marginBottom: 12,
   },
   progressTrack: {
     flexDirection: 'row',
   },
   progressSegment: {
     flex: 1,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    marginRight: 6,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.fill,
+    marginRight: 4,
   },
   progressSegmentFilled: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.primary,
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingHorizontal: 16,
+    paddingTop: 4,
     paddingBottom: 24,
   },
   fieldLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: COLORS.text,
-    marginTop: 16,
+    color: COLORS.label,
+    marginTop: 22,
     marginBottom: 8,
   },
+  questionNumber: {
+    color: COLORS.primary,
+    fontWeight: '700',
+  },
   helperText: {
-    color: COLORS.textMuted,
+    color: COLORS.secondaryLabel,
     fontSize: 13,
     marginBottom: 10,
   },
   input: {
     backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    color: COLORS.text,
-    borderRadius: 10,
+    color: COLORS.label,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 10,
+    paddingVertical: 14,
+    fontSize: 17,
+    marginBottom: 8,
   },
   navRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.borderLight,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.separator,
     backgroundColor: COLORS.white,
   },
   navButtonSecondary: {
     paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
+    paddingHorizontal: 8,
   },
   navButtonSecondaryText: {
     color: COLORS.primary,
-    fontWeight: '600',
-    fontSize: 15,
+    fontWeight: '500',
+    fontSize: 17,
   },
   navButtonPrimary: {
     paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 10,
+    paddingHorizontal: 40,
+    borderRadius: 14,
     backgroundColor: COLORS.primary,
   },
   navButtonPrimaryText: {
     color: COLORS.white,
     fontWeight: '600',
-    fontSize: 15,
+    fontSize: 17,
   },
 });

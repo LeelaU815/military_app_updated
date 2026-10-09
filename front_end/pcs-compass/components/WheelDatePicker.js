@@ -29,9 +29,9 @@ export default function WheelDatePicker({
         itemStyle={styles.pickerItem}
         onValueChange={onChangeMonth}
       >
-        <Picker.Item label="Month" value={null} color={COLORS.textOnDark} />
+        <Picker.Item label="Month" value={null} color={COLORS.tertiaryLabel} />
         {MONTH_NAMES.map((m, i) => (
-          <Picker.Item key={m} label={m} value={i + 1} color={COLORS.black} />
+          <Picker.Item key={m} label={m} value={i + 1} color={COLORS.label} />
         ))}
       </Picker>
 
@@ -41,9 +41,9 @@ export default function WheelDatePicker({
         itemStyle={styles.pickerItem}
         onValueChange={onChangeDay}
       >
-        <Picker.Item label="Day" value={null} color={COLORS.textOnDark} />
+        <Picker.Item label="Day" value={null} color={COLORS.tertiaryLabel} />
         {days.map((d) => (
-          <Picker.Item key={d} label={String(d)} value={d} color={COLORS.black} />
+          <Picker.Item key={d} label={String(d)} value={d} color={COLORS.label} />
         ))}
       </Picker>
 
@@ -53,9 +53,9 @@ export default function WheelDatePicker({
         itemStyle={styles.pickerItem}
         onValueChange={onChangeYear}
       >
-        <Picker.Item label="Year" value={null} color={COLORS.textOnDark} />
+        <Picker.Item label="Year" value={null} color={COLORS.tertiaryLabel} />
         {yearRange.map((y) => (
-          <Picker.Item key={y} label={String(y)} value={y} color={COLORS.black} />
+          <Picker.Item key={y} label={String(y)} value={y} color={COLORS.label} />
         ))}
       </Picker>
     </View>
@@ -66,15 +66,16 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.navyLight,
-    borderRadius: 10,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   picker: {
     flex: 1,
-    color: COLORS.white,
+    color: COLORS.label,
   },
   pickerItem: {
-    color: COLORS.white,
-    fontSize: 16,
+    color: COLORS.label,
+    fontSize: 17,
   },
 });

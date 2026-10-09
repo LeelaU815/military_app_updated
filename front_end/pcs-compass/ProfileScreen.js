@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCurrentUser, loadProfile, saveProfile, logOut } from './storage';
 import { withHomeLocation } from './geocode';
 import {
@@ -50,6 +51,7 @@ export default function ProfileScreen({ navigation }) {
   const [draftData, setDraftData] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
+  const insets = useSafeAreaInsets();
 
   const refreshProfile = async () => {
     try {
@@ -128,37 +130,45 @@ export default function ProfileScreen({ navigation }) {
     ]);
   };
 
-  const Row = ({ label, value }) => (
-    <View style={styles.row}>
+  // Settings-style row: label on the left, value on the right.
+  const Row = ({ label, value, last }) => (
+    <View style={[styles.row, !last && styles.rowBorder]}>
       <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.rowValue}>{value || 'Not set'}</Text>
     </View>
   );
 
+  const Section = ({ title, children }) => (
+    <>
+      <Text style={styles.sectionHeader}>{title}</Text>
+      <View style={styles.group}>{children}</View>
+    </>
+  );
+
   if (loading) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.subtitle}>Loading...</Text>
+      <View style={[styles.container, styles.center]}>
+        <Text style={styles.muted}>Loading...</Text>
       </View>
     );
   }
 
   if (!savedData) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.title}>No profile found</Text>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Text style={styles.backButtonText}>Back</Text>
+      <View style={[styles.container, styles.center]}>
+        <Text style={styles.emptyTitle}>No profile found</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
+          <Text style={styles.navLink}>Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   const pcsDateText =
-    draftData.pcsDateType === 'Date'
-      ? formatDate(draftData.pcsMonth, draftData.pcsDay, draftData.pcsYear)
-      : draftData.pcsDateType === 'Timeframe'
-      ? `${formatDate(draftData.pcsStartMonth, draftData.pcsStartDay, draftData.pcsStartYear)} – ${formatDate(draftData.pcsEndMonth, draftData.pcsEndDay, draftData.pcsEndYear)}`
+    savedData.pcsDateType === 'Date'
+      ? formatDate(savedData.pcsMonth, savedData.pcsDay, savedData.pcsYear)
+      : savedData.pcsDateType === 'Timeframe'
+      ? `${formatDate(savedData.pcsStartMonth, savedData.pcsStartDay, savedData.pcsStartYear)} – ${formatDate(savedData.pcsEndMonth, savedData.pcsEndDay, savedData.pcsEndYear)}`
       : 'Not sure';
 
   return (
@@ -166,57 +176,62 @@ export default function ProfileScreen({ navigation }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backLink}>Back</Text>
+      <View style={[styles.navBar, { paddingTop: insets.top + 6 }]}>
+        <TouchableOpacity onPress={editMode ? handleCancel : () => navigation.goBack()} hitSlop={10}>
+          <Text style={styles.navLink}>{editMode ? 'Cancel' : 'Back'}</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
-        {editMode ? (
-          <TouchableOpacity onPress={handleCancel}>
-            <Text style={styles.backLink}>Cancel</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={handleEdit}>
-            <Text style={styles.editLink}>Edit</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity onPress={editMode ? handleSave : handleEdit} hitSlop={10}>
+          <Text style={[styles.navLink, styles.navLinkBold]}>{editMode ? 'Save' : 'Edit'}</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled">
+        <Text style={styles.largeTitle}>{editMode ? 'Edit Profile' : 'Profile'}</Text>
         {!editMode ? (
           <>
-            <Row label="Family last name" value={savedData.familyLastName} />
-            <Row label="Name" value={savedData.name} />
-            <Row label="Age" value={displayAge(savedData)} />
-            <Row label="Date of birth" value={formatDate(savedData.dobMonth, savedData.dobDay, savedData.dobYear)} />
-            <Row
-              label="Disability category"
-              value={disabilityLabel(savedData)}
-            />
-            <Row label="Gender" value={savedData.gender === 'Self-describe' ? savedData.genderOther : savedData.gender} />
-            <Row label="Insurance" value={savedData.insurance} />
-            <Row label="EFMP status" value={savedData.efmpStatus} />
-            <Row
-              label="Residential area decided"
-              value={savedData.residentialDecided === 'Yes'
-                ? `Yes — ${savedData.address}, ${savedData.city}, ${savedData.state} ${savedData.zip}`
-                : 'No'}
-            />
-            <Row
-              label="Priority ranking"
-              value={priorityIds(savedData.residentialDecided, savedData.priorityOrder)
-                .map((id, i) => `${i + 1}. ${PRIORITY_LABELS[id]}`)
-                .join('\n')}
-            />
-            <Row label="IEP / 504 importance" value={savedData.iepImportance ? `${savedData.iepImportance} / 5` : null} />
-            <Row label="Respite support importance" value={savedData.respiteImportance ? `${savedData.respiteImportance} / 5` : null} />
-            <Row label="Notifications" value={savedData.notifications} />
-            <Row label="Estimated PCS date" value={pcsDateText} />
-            <Row label="Installation" value={installationName(savedData.installation)} />
+            <Section title="FAMILY MEMBER">
+              <Row label="Family" value={savedData.familyLastName} />
+              <Row label="Name" value={savedData.name} />
+              <Row label="Age" value={displayAge(savedData)} />
+              <Row label="Birthday" value={formatDate(savedData.dobMonth, savedData.dobDay, savedData.dobYear)} />
+              <Row label="Gender" value={savedData.gender === 'Self-describe' ? savedData.genderOther : savedData.gender} />
+              <Row label="Needs" value={disabilityLabel(savedData)} last />
+            </Section>
 
-            <TouchableOpacity style={styles.logOutButton} onPress={handleLogOut}>
-              <Text style={styles.logOutButtonText}>Log out</Text>
-            </TouchableOpacity>
+            <Section title="COVERAGE & EFMP">
+              <Row label="TRICARE" value={savedData.insurance} />
+              <Row label="EFMP status" value={savedData.efmpStatus} last />
+            </Section>
+
+            <Section title="HOME">
+              <Row
+                label="Address"
+                value={savedData.residentialDecided === 'Yes'
+                  ? `${savedData.address}, ${savedData.city}, ${savedData.state} ${savedData.zip}`
+                  : 'Not decided yet'}
+                last
+              />
+            </Section>
+
+            <Section title="WHAT MATTERS MOST">
+              {priorityIds(savedData.residentialDecided, savedData.priorityOrder).map((id, i) => (
+                <Row key={id} label={`${i + 1}`} value={PRIORITY_LABELS[id]} last={false} />
+              ))}
+              <Row label="IEP / 504" value={savedData.iepImportance ? `${savedData.iepImportance} of 5` : null} />
+              <Row label="Respite care" value={savedData.respiteImportance ? `${savedData.respiteImportance} of 5` : null} last />
+            </Section>
+
+            <Section title="PCS">
+              <Row label="Installation" value={installationName(savedData.installation)} />
+              <Row label="Date" value={pcsDateText} />
+              <Row label="Notifications" value={savedData.notifications} last />
+            </Section>
+
+            <View style={[styles.group, { marginTop: 32 }]}>
+              <TouchableOpacity style={styles.logOutRow} onPress={handleLogOut}>
+                <Text style={styles.logOutText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
           </>
         ) : (
           <>
@@ -225,7 +240,7 @@ export default function ProfileScreen({ navigation }) {
               style={styles.input}
               value={draftData.familyLastName}
               onChangeText={(t) => update('familyLastName', t)}
-              placeholderTextColor={COLORS.textOnDark}
+              placeholderTextColor={COLORS.tertiaryLabel}
             />
 
             <Text style={styles.fieldLabel}>Name</Text>
@@ -233,7 +248,7 @@ export default function ProfileScreen({ navigation }) {
               style={styles.input}
               value={draftData.name}
               onChangeText={(t) => update('name', t)}
-              placeholderTextColor={COLORS.textOnDark}
+              placeholderTextColor={COLORS.tertiaryLabel}
             />
 
             <Text style={styles.fieldLabel}>Date of birth</Text>
@@ -254,7 +269,6 @@ export default function ProfileScreen({ navigation }) {
 
             <Text style={styles.fieldLabel}>Disability category</Text>
             <Dropdown
-              dark
               value={draftData.disabilityType}
               onChange={(v) => update('disabilityType', v)}
               options={DISABILITY_OPTIONS}
@@ -266,56 +280,56 @@ export default function ProfileScreen({ navigation }) {
                 placeholder="Please describe"
                 value={draftData.disabilityOther}
                 onChangeText={(t) => update('disabilityOther', t)}
-                placeholderTextColor={COLORS.textOnDark}
+                placeholderTextColor={COLORS.tertiaryLabel}
               />
             )}
 
             <Text style={styles.fieldLabel}>Gender</Text>
-            <ChoiceRow dark options={GENDERS} selected={draftData.gender} onSelect={(v) => update('gender', v)} />
+            <ChoiceRow options={GENDERS} selected={draftData.gender} onSelect={(v) => update('gender', v)} />
             {draftData.gender === 'Self-describe' && (
               <TextInput
                 style={[styles.input, { marginTop: 4 }]}
                 value={draftData.genderOther}
                 onChangeText={(t) => update('genderOther', t)}
-                placeholderTextColor={COLORS.textOnDark}
+                placeholderTextColor={COLORS.tertiaryLabel}
               />
             )}
 
             <Text style={styles.fieldLabel}>Insurance</Text>
-            <ChoiceRow dark options={INSURANCE_OPTIONS} selected={draftData.insurance} onSelect={(v) => update('insurance', v)} />
+            <ChoiceRow options={INSURANCE_OPTIONS} selected={draftData.insurance} onSelect={(v) => update('insurance', v)} />
 
             <Text style={styles.fieldLabel}>EFMP status</Text>
-            <ChoiceRow dark options={EFMP_OPTIONS} selected={draftData.efmpStatus} onSelect={(v) => update('efmpStatus', v)} />
+            <ChoiceRow options={EFMP_OPTIONS} selected={draftData.efmpStatus} onSelect={(v) => update('efmpStatus', v)} />
 
             <Text style={styles.fieldLabel}>Residential area decided?</Text>
-            <ChoiceRow dark options={['Yes', 'No']} selected={draftData.residentialDecided} onSelect={(v) => update('residentialDecided', v)} />
+            <ChoiceRow options={['Yes', 'No']} selected={draftData.residentialDecided} onSelect={(v) => update('residentialDecided', v)} />
             {draftData.residentialDecided === 'Yes' && (
               <View>
                 <TextInput
                   style={styles.input}
                   placeholder="Street address"
-                  placeholderTextColor={COLORS.textOnDark}
+                  placeholderTextColor={COLORS.tertiaryLabel}
                   value={draftData.address}
                   onChangeText={(t) => update('address', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="City"
-                  placeholderTextColor={COLORS.textOnDark}
+                  placeholderTextColor={COLORS.tertiaryLabel}
                   value={draftData.city}
                   onChangeText={(t) => update('city', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="State"
-                  placeholderTextColor={COLORS.textOnDark}
+                  placeholderTextColor={COLORS.tertiaryLabel}
                   value={draftData.state}
                   onChangeText={(t) => update('state', t)}
                 />
                 <TextInput
                   style={styles.input}
                   placeholder="Zip code"
-                  placeholderTextColor={COLORS.textOnDark}
+                  placeholderTextColor={COLORS.tertiaryLabel}
                   value={draftData.zip}
                   onChangeText={(t) => update('zip', t.replace(/[^0-9]/g, ''))}
                   keyboardType="number-pad"
@@ -326,22 +340,21 @@ export default function ProfileScreen({ navigation }) {
             <Text style={styles.fieldLabel}>Priority ranking</Text>
             <Text style={styles.helperText}>Use the arrows to move things up or down. Top = most important.</Text>
             <RankList
-              dark
               items={priorityItems}
               onReorder={(order) => update('priorityOrder', order)}
             />
 
             <Text style={[styles.fieldLabel, { marginTop: 24 }]}>IEP / 504 importance (1–5)</Text>
-            <ScaleSelector dark value={draftData.iepImportance} onSelect={(v) => update('iepImportance', v)} />
+            <ScaleSelector value={draftData.iepImportance} onSelect={(v) => update('iepImportance', v)} />
 
             <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Respite support importance (1–5)</Text>
-            <ScaleSelector dark value={draftData.respiteImportance} onSelect={(v) => update('respiteImportance', v)} />
+            <ScaleSelector value={draftData.respiteImportance} onSelect={(v) => update('respiteImportance', v)} />
 
             <Text style={styles.fieldLabel}>Notifications</Text>
-            <ChoiceRow dark options={['Yes', 'No']} selected={draftData.notifications} onSelect={(v) => update('notifications', v)} />
+            <ChoiceRow options={['Yes', 'No']} selected={draftData.notifications} onSelect={(v) => update('notifications', v)} />
 
             <Text style={styles.fieldLabel}>PCS date type</Text>
-            <ChoiceRow dark options={['Date', 'Timeframe', 'Not sure']} selected={draftData.pcsDateType} onSelect={(v) => update('pcsDateType', v)} />
+            <ChoiceRow options={['Date', 'Timeframe', 'Not sure']} selected={draftData.pcsDateType} onSelect={(v) => update('pcsDateType', v)} />
             {draftData.pcsDateType === 'Date' && (
               <WheelDatePicker
                 month={draftData.pcsMonth}
@@ -380,7 +393,6 @@ export default function ProfileScreen({ navigation }) {
 
             <Text style={styles.fieldLabel}>Installation</Text>
             <Dropdown
-              dark
               value={draftData.installation}
               onChange={(v) => update('installation', v)}
               options={INSTALLATION_OPTIONS}
@@ -400,122 +412,118 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.navy,
+    backgroundColor: COLORS.groupedBackground,
   },
-  emptyState: {
-    flex: 1,
-    backgroundColor: COLORS.navy,
+  center: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
   },
-  header: {
+  muted: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.label,
+  },
+  navBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 6,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.white,
+  navLink: {
+    fontSize: 17,
+    color: COLORS.primary,
   },
-  backLink: {
-    color: COLORS.textOnDark,
-    fontSize: 15,
-  },
-  editLink: {
-    color: COLORS.accent,
-    fontSize: 15,
+  navLinkBold: {
     fontWeight: '600',
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.white,
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: COLORS.textOnDark,
-  },
-  row: {
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.navyLight,
-    paddingBottom: 12,
-  },
-  rowLabel: {
-    color: COLORS.textOnDark,
-    fontSize: 13,
+  largeTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: COLORS.label,
+    marginTop: 4,
     marginBottom: 4,
   },
+  sectionHeader: {
+    fontSize: 13,
+    color: COLORS.secondaryLabel,
+    marginTop: 24,
+    marginBottom: 6,
+    marginLeft: 16,
+  },
+  group: {
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 16,
+    paddingRight: 16,
+    paddingVertical: 12,
+    minHeight: 46,
+  },
+  rowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.separator,
+  },
+  rowLabel: {
+    fontSize: 17,
+    color: COLORS.label,
+    marginRight: 12,
+  },
   rowValue: {
-    color: COLORS.white,
-    fontSize: 16,
+    flex: 1,
+    fontSize: 17,
+    color: COLORS.secondaryLabel,
+    textAlign: 'right',
+  },
+  logOutRow: {
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  logOutText: {
+    fontSize: 17,
+    color: '#FF3B30',
   },
   fieldLabel: {
-    color: COLORS.white,
     fontSize: 15,
     fontWeight: '600',
-    marginTop: 16,
+    color: COLORS.label,
+    marginTop: 22,
     marginBottom: 8,
   },
   helperText: {
-    color: COLORS.textOnDark,
+    color: COLORS.secondaryLabel,
     fontSize: 13,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: COLORS.navyLight,
-    color: COLORS.white,
-    borderRadius: 10,
+    backgroundColor: COLORS.white,
+    color: COLORS.label,
+    borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 10,
+    paddingVertical: 14,
+    fontSize: 17,
+    marginBottom: 8,
   },
   saveButton: {
-    backgroundColor: COLORS.white,
-    paddingVertical: 14,
-    borderRadius: 10,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 28,
   },
   saveButtonText: {
-    color: COLORS.navy,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  logOutButton: {
-    marginTop: 8,
-    paddingVertical: 14,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: COLORS.navyLight,
-    alignItems: 'center',
-  },
-  logOutButtonText: {
-    color: COLORS.textOnDark,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  backButton: {
-    marginTop: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderWidth: 2,
-    borderColor: COLORS.white,
-    borderRadius: 10,
-  },
-  backButtonText: {
     color: COLORS.white,
-    fontSize: 15,
+    fontSize: 17,
+    fontWeight: '600',
   },
 });

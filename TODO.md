@@ -6,7 +6,7 @@
 - [x] map & discovery screen (map pins, type tabs, "for my kid" vs "show all" toggle, details)
 - [x] "choose this location" on the map (card + details page), saved to users/{uid}/savedLocations
 - [x] account button on home (profile + log out)
-- [ ] apple-style look for the rest of the app (home, profile wizard, profile, login/sign up)
+- [x] apple-style look for the rest of the app (home, profile wizard, profile, login/sign up) + 7 tabs
 - [ ] checklists (pre-move / arrival / onboarding + EFMP tasks), saved to users/{uid}/checklistProgress
 - [ ] chosen locations show up in contacts + create tasks
 - [ ] contacts screen (verified contacts + chosen places + custom contacts, tap to call)

@@ -4,19 +4,22 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { COLORS } from '../theme';
 
 // 1-5 rating circles.
-export default function ScaleSelector({ value, onSelect, dark }) {
-  const theme = dark ? darkStyles : lightStyles;
+export default function ScaleSelector({ value, onSelect }) {
   return (
     <View style={styles.row}>
-      {[1, 2, 3, 4, 5].map((num) => (
-        <TouchableOpacity
-          key={num}
-          style={[styles.circle, theme.circle, value === num && theme.circleSelected]}
-          onPress={() => onSelect(num)}
-        >
-          <Text style={[styles.text, theme.text, value === num && theme.textSelected]}>{num}</Text>
-        </TouchableOpacity>
-      ))}
+      {[1, 2, 3, 4, 5].map((num) => {
+        const selected = value === num;
+        return (
+          <TouchableOpacity
+            key={num}
+            style={[styles.circle, selected && styles.circleSelected]}
+            onPress={() => onSelect(num)}
+            accessibilityLabel={`${num} out of 5`}
+          >
+            <Text style={[styles.text, selected && styles.textSelected]}>{num}</Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
@@ -30,26 +33,19 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.white,
+  },
+  circleSelected: {
+    backgroundColor: COLORS.primary,
   },
   text: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
+    color: COLORS.label,
   },
-});
-
-const lightStyles = StyleSheet.create({
-  circle: { borderColor: COLORS.border, backgroundColor: COLORS.white },
-  circleSelected: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  text: { color: COLORS.textMuted },
-  textSelected: { color: COLORS.white },
-});
-
-const darkStyles = StyleSheet.create({
-  circle: { borderColor: COLORS.navyLight },
-  circleSelected: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
-  text: { color: COLORS.textOnDark },
-  textSelected: { color: COLORS.navy },
+  textSelected: {
+    color: COLORS.white,
+  },
 });

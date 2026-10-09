@@ -1,20 +1,23 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { getCurrentUser, loadProfile } from './storage';
 import { MONTH_NAMES, installationName, disabilityLabel, displayAge } from './constants';
 import AccountButton from './components/AccountButton';
 import { COLORS } from './theme';
 
+// Settings-style shortcuts to each tab (icon colors from Apple's system palette).
 const QUICK_ACTIONS = [
-  { key: 'Map', label: 'Map & Discovery', icon: 'map-outline', tab: 'MapTab' },
-  { key: 'Checklists', label: 'Checklists', icon: 'checkbox-outline' },
-  { key: 'Documents', label: 'Documents', icon: 'document-text-outline' },
-  { key: 'Contacts', label: 'Contacts', icon: 'people-outline', tab: 'ContactsTab' },
-  { key: 'Calendar', label: 'Calendar', icon: 'calendar-outline' },
-  { key: 'Alerts', label: 'Alerts', icon: 'notifications-outline', tab: 'AlertsTab' },
+  { label: 'Map & Discovery', icon: 'map', color: '#007AFF', tab: 'MapTab' },
+  { label: 'Checklists', icon: 'checkbox', color: '#34C759', tab: 'ChecklistsTab' },
+  { label: 'Documents', icon: 'document-text', color: '#5856D6', tab: 'DocumentsTab' },
+  { label: 'Calendar', icon: 'calendar', color: '#FF3B30', tab: 'CalendarTab' },
+  { label: 'Contacts', icon: 'people', color: '#FF9500', tab: 'ContactsTab' },
+  { label: 'Alerts', icon: 'notifications', color: '#FF2D55', tab: 'AlertsTab' },
 ];
 
 function daysUntil(month, day, year) {
@@ -31,7 +34,25 @@ function formatDate(month, day, year) {
   return `${MONTH_NAMES[month - 1]} ${day}, ${year}`;
 }
 
+function ListRow({ icon, color, label, value, onPress, last }) {
+  return (
+    <TouchableOpacity style={styles.listRow} onPress={onPress} disabled={!onPress} activeOpacity={0.6}>
+      {icon && (
+        <View style={[styles.iconSquare, { backgroundColor: color }]}>
+          <Ionicons name={icon} size={17} color={COLORS.white} />
+        </View>
+      )}
+      <View style={[styles.listRowBody, !last && styles.listRowBorder]}>
+        <Text style={styles.listLabel}>{label}</Text>
+        {!!value && <Text style={styles.listValue} numberOfLines={1}>{value}</Text>}
+        {onPress && <Ionicons name="chevron-forward" size={17} color={COLORS.tertiaryLabel} />}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export default function DashboardScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,18 +78,10 @@ export default function DashboardScreen({ navigation }) {
     }, [])
   );
 
-  const handleQuickAction = (action) => {
-    if (action.tab) {
-      navigation.navigate(action.tab);
-      return;
-    }
-    Alert.alert(action.label, `${action.label} screen is coming soon.`);
-  };
-
   if (loading) {
     return (
-      <View style={styles.emptyState}>
-        <Text style={styles.subtitle}>Loading...</Text>
+      <View style={[styles.screen, styles.center]}>
+        <Text style={styles.muted}>Loading...</Text>
       </View>
     );
   }
@@ -77,29 +90,32 @@ export default function DashboardScreen({ navigation }) {
   if (!profile || profile.status === 'draft') {
     const isDraft = !!profile;
     return (
-      <View style={styles.emptyState}>
-        <View style={styles.emptyAccount}>
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <View style={styles.titleRow}>
+          <Text style={styles.largeTitle}>Home</Text>
           <AccountButton navigation={navigation} color={COLORS.primary} showProfile={false} />
         </View>
-        <Text style={styles.title}>Dashboard</Text>
-        <Text style={styles.subtitle}>
-          {isDraft
-            ? 'Your profile is saved partway. Finish it to see your dashboard.'
-            : "You haven't created a profile yet."}
-        </Text>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => navigation.navigate('ProfileCreation')}
-        >
-          <Text style={styles.createButtonText}>{isDraft ? 'Finish Profile' : 'Create Profile'}</Text>
-        </TouchableOpacity>
+        <View style={styles.center}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="person-add" size={30} color={COLORS.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>{isDraft ? 'Finish your profile' : 'Create your family profile'}</Text>
+          <Text style={styles.emptyText}>
+            {isDraft
+              ? "You're partway there. Pick up where you left off."
+              : 'It takes about 5 minutes and lets us rank schools and providers for your child.'}
+          </Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => navigation.navigate('ProfileCreation')}>
+            <Text style={styles.primaryButtonText}>{isDraft ? 'Finish Profile' : 'Create Profile'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
 
   let daysLabel = null;
   let reportDateText = null;
-  let pcsFallbackMessage = 'PCS date not yet set';
+  let pcsFallbackMessage = 'PCS date not set yet';
 
   if (profile.pcsDateType === 'Date') {
     const days = daysUntil(profile.pcsMonth, profile.pcsDay, profile.pcsYear);
@@ -112,257 +128,224 @@ export default function DashboardScreen({ navigation }) {
     const days = daysUntil(profile.pcsStartMonth, profile.pcsStartDay, profile.pcsStartYear);
     if (days !== null) {
       daysLabel = days >= 0 ? days : 0;
-      reportDateText = `Earliest window: ${formatDate(profile.pcsStartMonth, profile.pcsStartDay, profile.pcsStartYear)}`;
+      reportDateText = `Earliest: ${formatDate(profile.pcsStartMonth, profile.pcsStartDay, profile.pcsStartYear)}`;
       if (days < 0) pcsFallbackMessage = 'PCS window has begun';
     }
   }
 
   const installationDisplay = installationName(profile.installation);
+  const age = displayAge(profile);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
-      <LinearGradient colors={[COLORS.gradientTop, COLORS.gradientBottom]} style={styles.header}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.welcomeText, { flex: 1 }]}>
-            Welcome back{profile.familyLastName ? `, ${profile.familyLastName} family` : ''}
-          </Text>
-          <AccountButton navigation={navigation} />
-        </View>
-        {installationDisplay && (
-          <Text style={styles.installationText}>{installationDisplay} bound</Text>
-        )}
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 32 }}
+    >
+      <View style={styles.titleRow}>
+        <Text style={styles.largeTitle}>Home</Text>
+        <AccountButton navigation={navigation} color={COLORS.primary} />
+      </View>
+      <Text style={styles.greeting}>
+        Welcome back{profile.familyLastName ? `, ${profile.familyLastName} family` : ''}
+      </Text>
 
+      {/* The one bold card on the screen: the PCS countdown. */}
+      <LinearGradient colors={[COLORS.gradientTop, COLORS.gradientBottom]} style={styles.hero}>
+        {installationDisplay && <Text style={styles.heroLabel}>{installationDisplay.toUpperCase()}</Text>}
         {daysLabel !== null ? (
-          <View style={styles.pcsCard}>
-            <View style={styles.pcsCardRow}>
-              <Text style={styles.pcsNumber}>{daysLabel}</Text>
-              <Text style={styles.pcsLabel}>DAYS{'\n'}UNTIL PCS</Text>
+          <>
+            <View style={styles.heroRow}>
+              <Text style={styles.heroNumber}>{daysLabel}</Text>
+              <Text style={styles.heroUnit}>{daysLabel === 1 ? 'day' : 'days'} until PCS</Text>
             </View>
-            {reportDateText && <Text style={styles.pcsReportDate}>{reportDateText}</Text>}
-          </View>
+            {reportDateText && <Text style={styles.heroDate}>{reportDateText}</Text>}
+          </>
         ) : (
-          <View style={styles.pcsCard}>
-            <Text style={styles.pcsFallback}>{pcsFallbackMessage}</Text>
-          </View>
+          <Text style={styles.heroFallback}>{pcsFallbackMessage}</Text>
         )}
       </LinearGradient>
 
-      <View style={styles.body}>
-        <Text style={styles.sectionHeading}>QUICK ACTIONS</Text>
-        <View style={styles.grid}>
-          {QUICK_ACTIONS.map((action) => (
-            <TouchableOpacity
-              key={action.key}
-              style={styles.gridCard}
-              onPress={() => handleQuickAction(action)}
-            >
-              <Ionicons name={action.icon} size={24} color={COLORS.goldDark} />
-              <Text style={styles.gridCardText}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <Text style={styles.sectionHeader}>QUICK ACCESS</Text>
+      <View style={styles.group}>
+        {QUICK_ACTIONS.map((action, i) => (
+          <ListRow
+            key={action.tab}
+            icon={action.icon}
+            color={action.color}
+            label={action.label}
+            onPress={() => navigation.navigate(action.tab)}
+            last={i === QUICK_ACTIONS.length - 1}
+          />
+        ))}
+      </View>
 
-        <TouchableOpacity
-          style={styles.summaryCard}
-          onPress={() => navigation.navigate('Profile')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.summaryHeader}>
-            <Text style={styles.sectionHeading}>NEEDS PROFILE SUMMARY</Text>
-            {profile.efmpStatus && (
-              <View style={styles.efmpBadge}>
-                <Text style={styles.efmpBadgeText}>{profile.efmpStatus}</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Family member</Text>
-            <Text style={styles.summaryValue}>
-              {profile.name}{displayAge(profile) ? ` · Age ${displayAge(profile)}` : ''}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Category</Text>
-            <Text style={styles.summaryValue}>
-              {disabilityLabel(profile)}
-            </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Coverage</Text>
-            <Text style={styles.summaryValue}>
-              {profile.insurance ? `TRICARE ${profile.insurance}` : 'Not set'}
-            </Text>
-          </View>
-        </TouchableOpacity>
+      <Text style={styles.sectionHeader}>{(profile.name || 'FAMILY MEMBER').toUpperCase()}</Text>
+      <View style={styles.group}>
+        <ListRow label="Age" value={age} />
+        <ListRow label="Needs" value={disabilityLabel(profile)} />
+        <ListRow label="Coverage" value={profile.insurance ? `TRICARE ${profile.insurance}` : 'Not set'} />
+        <ListRow label="EFMP" value={profile.efmpStatus} />
+        <ListRow label="View full profile" onPress={() => navigation.navigate('Profile')} last />
       </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.groupedBackground,
   },
-  emptyState: {
+  center: {
     flex: 1,
-    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 15,
-    color: COLORS.textMuted,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  createButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
     paddingHorizontal: 32,
-    borderRadius: 10,
+    paddingBottom: 40,
   },
-  createButtonText: {
+  muted: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginHorizontal: 16,
+  },
+  largeTitle: {
+    fontSize: 34,
+    fontWeight: '700',
+    color: COLORS.label,
+  },
+  greeting: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
+    marginHorizontal: 16,
+    marginTop: 2,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.label,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 15,
+    color: COLORS.secondaryLabel,
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 21,
+  },
+  primaryButton: {
+    marginTop: 24,
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
+    paddingVertical: 15,
+    paddingHorizontal: 36,
+  },
+  primaryButtonText: {
     color: COLORS.white,
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
   },
-  header: {
-    paddingTop: 56,
-    paddingHorizontal: 24,
-    paddingBottom: 24,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  emptyAccount: {
-    position: 'absolute',
-    top: 56,
-    right: 20,
-  },
-  welcomeText: {
-    color: COLORS.subtle,
-    fontSize: 15,
-    marginBottom: 4,
-  },
-  installationText: {
-    color: COLORS.white,
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  pcsCard: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
+  hero: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 18,
     padding: 20,
   },
-  pcsCardRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-  },
-  pcsNumber: {
-    color: COLORS.gold,
-    fontSize: 48,
-    fontWeight: 'bold',
-    marginRight: 10,
-  },
-  pcsLabel: {
+  heroLabel: {
     color: COLORS.subtle,
-    fontSize: 13,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  pcsReportDate: {
-    color: COLORS.gold,
-    fontSize: 13,
-    marginTop: 6,
-    fontWeight: '600',
-  },
-  pcsFallback: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  body: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-  },
-  sectionHeading: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  gridCard: {
-    width: '31.5%',
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    paddingVertical: 18,
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
-  },
-  gridCardText: {
-    color: COLORS.text,
     fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+  },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 6,
+  },
+  heroNumber: {
+    color: COLORS.gold,
+    fontSize: 56,
+    fontWeight: '700',
+    marginRight: 8,
+  },
+  heroUnit: {
+    color: COLORS.white,
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  heroDate: {
+    color: COLORS.subtle,
+    fontSize: 14,
+    marginTop: 2,
+  },
+  heroFallback: {
+    color: COLORS.white,
+    fontSize: 17,
     fontWeight: '600',
     marginTop: 8,
-    textAlign: 'center',
   },
-  summaryCard: {
+  sectionHeader: {
+    fontSize: 13,
+    color: COLORS.secondaryLabel,
+    marginTop: 28,
+    marginBottom: 6,
+    marginHorizontal: 32,
+  },
+  group: {
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    overflow: 'hidden',
   },
-  summaryHeader: {
+  listRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    paddingLeft: 16,
   },
-  efmpBadge: {
-    backgroundColor: COLORS.gradientTop,
-    borderRadius: 20,
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+  iconSquare: {
+    width: 29,
+    height: 29,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
-  efmpBadgeText: {
-    color: COLORS.gold,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  summaryRow: {
+  listRowBody: {
+    flex: 1,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingRight: 14,
+    minHeight: 46,
   },
-  summaryLabel: {
-    color: COLORS.textMuted,
-    fontSize: 14,
+  listRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: COLORS.separator,
   },
-  summaryValue: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: '600',
+  listLabel: {
+    flex: 1,
+    fontSize: 17,
+    color: COLORS.label,
+  },
+  listValue: {
+    fontSize: 17,
+    color: COLORS.secondaryLabel,
+    marginLeft: 12,
+    maxWidth: '60%',
+    textAlign: 'right',
   },
 });

@@ -6,8 +6,8 @@ import { COLORS } from '../theme';
 
 // Ranked list with up/down arrows on each row. Top = most important.
 // items are already in ranked order; onReorder gets the new list of ids.
-export default function RankList({ items, onReorder, dark }) {
-  const theme = dark ? darkStyles : lightStyles;
+export default function RankList({ items, onReorder }) {
+  const theme = lightStyles;
 
   const move = (index, direction) => {
     const target = index + direction;
@@ -82,17 +82,9 @@ const styles = StyleSheet.create({
 });
 
 const lightStyles = StyleSheet.create({
-  row: { backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border },
+  row: { backgroundColor: COLORS.white },
   rank: { color: COLORS.primary },
-  label: { color: COLORS.text },
-  arrow: { backgroundColor: COLORS.borderLight },
+  label: { color: COLORS.label },
+  arrow: { backgroundColor: COLORS.fill },
   icon: { color: COLORS.primary },
-});
-
-const darkStyles = StyleSheet.create({
-  row: { backgroundColor: COLORS.navyLight },
-  rank: { color: COLORS.accent },
-  label: { color: COLORS.white },
-  arrow: { backgroundColor: COLORS.navy },
-  icon: { color: COLORS.white },
 });

@@ -15,7 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getCurrentUser, loadProfile, loadSavedLocations, saveLocation, removeLocation } from './storage';
+import { getCurrentUser, loadProfile, saveProfile, loadSavedLocations, saveLocation, removeLocation } from './storage';
+import { withHomeLocation } from './geocode';
 import { findBase } from './constants';
 import { scorePlaces, criteriaWeights, PLACE_TYPES } from './scoring';
 import SegmentedControl from './components/SegmentedControl';
@@ -44,7 +45,17 @@ export default function MapScreen({ navigation }) {
       (async () => {
         try {
           const user = await getCurrentUser();
-          setProfile(user ? await loadProfile(user.uid) : null);
+          let loaded = user ? await loadProfile(user.uid) : null;
+          // Profiles saved before we looked up addresses have an address but no map spot yet.
+          if (loaded && loaded.status === 'complete' && loaded.residentialDecided === 'Yes' && loaded.homeLat == null) {
+            const { profile: located, found } = await withHomeLocation(loaded);
+            if (found) {
+              const { updatedAt, ...rest } = located;
+              await saveProfile(user.uid, rest);
+              loaded = located;
+            }
+          }
+          setProfile(loaded);
           if (user) {
             setUid(user.uid);
             setChosen(await loadSavedLocations(user.uid));
@@ -233,9 +244,9 @@ export default function MapScreen({ navigation }) {
         </View>
       </Marker>
       {home && (
-        <Marker coordinate={home} title="Home">
-          <View style={[styles.specialPin, { backgroundColor: COLORS.label }]}>
-            <Ionicons name="home" size={13} color={COLORS.white} />
+        <Marker coordinate={home} title="Home" description={profile.address} zIndex={20}>
+          <View style={[styles.homePin]}>
+            <Ionicons name="home" size={16} color={COLORS.white} />
           </View>
         </Marker>
       )}
@@ -438,6 +449,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: COLORS.white,
+  },
+  homePin: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.label,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: COLORS.white,
+    shadowColor: COLORS.black,
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
   },
   card: {
     backgroundColor: COLORS.white,

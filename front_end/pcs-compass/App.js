@@ -11,6 +11,9 @@ import ProfileCreationScreen from './ProfileCreationScreen';
 import ProfileScreen from './ProfileScreen';
 import MapScreen from './MapScreen';
 import PlaceDetailsScreen from './PlaceDetailsScreen';
+import ChecklistsScreen from './ChecklistsScreen';
+import DocumentsScreen from './DocumentsScreen';
+import CalendarScreen from './CalendarScreen';
 import ContactsScreen from './ContactsScreen';
 import AlertsScreen from './AlertsScreen';
 import { COLORS } from './theme';
@@ -18,34 +21,35 @@ import { COLORS } from './theme';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// The persistent bottom tab bar: Home / Map / Contacts / Alerts.
-// This stays visible while switching between these four sections.
+// The bottom tab bar. Stays visible while switching between sections.
+const TABS = [
+  { name: 'DashboardHome', label: 'Home', icon: 'home', component: DashboardScreen },
+  { name: 'MapTab', label: 'Map', icon: 'map', component: MapScreen },
+  { name: 'ChecklistsTab', label: 'Tasks', icon: 'checkbox', component: ChecklistsScreen },
+  { name: 'DocumentsTab', label: 'Docs', icon: 'document-text', component: DocumentsScreen },
+  { name: 'CalendarTab', label: 'Calendar', icon: 'calendar', component: CalendarScreen },
+  { name: 'ContactsTab', label: 'Contacts', icon: 'people', component: ContactsScreen },
+  { name: 'AlertsTab', label: 'Alerts', icon: 'notifications', component: AlertsScreen },
+];
+
 function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.placeholder,
+        tabBarInactiveTintColor: COLORS.tertiaryLabel,
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '500' },
+        tabBarStyle: { backgroundColor: COLORS.white, borderTopColor: COLORS.separator },
         tabBarIcon: ({ color, size, focused }) => {
-          let iconName;
-          if (route.name === 'DashboardHome') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'MapTab') {
-            iconName = focused ? 'map' : 'map-outline';
-          } else if (route.name === 'ContactsTab') {
-            iconName = focused ? 'people' : 'people-outline';
-          } else if (route.name === 'AlertsTab') {
-            iconName = focused ? 'notifications' : 'notifications-outline';
-          }
-          return <Ionicons name={iconName} size={size} color={color} />;
+          const tab = TABS.find((t) => t.name === route.name);
+          return <Ionicons name={focused ? tab.icon : `${tab.icon}-outline`} size={size - 2} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="DashboardHome" component={DashboardScreen} options={{ tabBarLabel: 'Home' }} />
-      <Tab.Screen name="MapTab" component={MapScreen} options={{ tabBarLabel: 'Map' }} />
-      <Tab.Screen name="ContactsTab" component={ContactsScreen} options={{ tabBarLabel: 'Contacts' }} />
-      <Tab.Screen name="AlertsTab" component={AlertsScreen} options={{ tabBarLabel: 'Alerts' }} />
+      {TABS.map((tab) => (
+        <Tab.Screen key={tab.name} name={tab.name} component={tab.component} options={{ tabBarLabel: tab.label }} />
+      ))}
     </Tab.Navigator>
   );
 }
