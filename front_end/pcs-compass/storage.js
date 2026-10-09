@@ -85,6 +85,37 @@ export async function removeLocation(uid, placeId) {
   await deleteDoc(doc(db, 'users', uid, 'savedLocations', placeId));
 }
 
+// Checklist check-offs and custom tasks, at users/{uid}/checklistProgress/{taskId}.
+// Built-in tasks only get a doc once they're checked off; custom tasks always have one.
+export async function loadChecklistProgress(uid) {
+  const snapshot = await getDocs(collection(db, 'users', uid, 'checklistProgress'));
+  const progress = {};
+  snapshot.forEach((d) => { progress[d.id] = d.data(); });
+  return progress;
+}
+
+export async function setTaskDone(uid, task, done) {
+  const ref = doc(db, 'users', uid, 'checklistProgress', task.id);
+  if (task.custom) {
+    await setDoc(ref, { done, doneAt: done ? serverTimestamp() : null }, { merge: true });
+  } else if (done) {
+    await setDoc(ref, { done: true, doneAt: serverTimestamp() });
+  } else {
+    await deleteDoc(ref);
+  }
+}
+
+export async function addCustomTask(uid, stage, title) {
+  const id = `custom-${Date.now()}`;
+  const task = { custom: true, stage, title: title.trim(), done: false };
+  await setDoc(doc(db, 'users', uid, 'checklistProgress', id), { ...task, createdAt: serverTimestamp() });
+  return { id, ...task };
+}
+
+export async function deleteCustomTask(uid, taskId) {
+  await deleteDoc(doc(db, 'users', uid, 'checklistProgress', taskId));
+}
+
 // Turns Firebase error codes into something a parent can act on.
 export function authErrorMessage(error) {
   switch (error && error.code) {

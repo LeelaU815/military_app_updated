@@ -17,8 +17,7 @@ export const BASES = [
         mtf: "Naval Medical Center Portsmouth",
         mtfPhone: "(757) 953-5008",
         efmpOffice: "Fleet & Family Support Center Norfolk (EFMP)",
-        efmpPhone: "(757) 444-2102",
-        efmpNote: "Update EFMP enrollment within 30 days of arrival."
+        efmpPhone: "(757) 444-2102"
     },
     { id: "little-creek", shortName: "Little Creek", name: "Joint Expeditionary Base Little Creek", city: "Virginia Beach", state: "VA", region: "hampton-roads", complete: false, lat: 36.917, lng: -76.164 },
     { id: "oceana", shortName: "Oceana", name: "Naval Air Station Oceana", city: "Virginia Beach", state: "VA", region: "hampton-roads", complete: false, lat: 36.8206, lng: -76.0333 },
@@ -106,6 +105,7 @@ export const SCHOOLS = [
 // tricare: "mtf" (military treatment facility), "accepted" (the provider or a provider directory lists TRICARE --
 // still confirm in-network for your plan), "efmp" (paid for by the Navy EFMP), "free", or null (not listed).
 // categories: which needs the services they offer cover. Speech or occupational therapy counts for autism (asd).
+// aba: true if they offer ABA therapy (adds the Autism Care Demonstration task when chosen).
 export const PROVIDERS = [
     { id: "p11", baseId: "norfolk", areaId: null, name: "Naval Medical Center Portsmouth", kind: "hospital", onBase: true, tricare: "mtf", address: "620 John Paul Jones Cir, Portsmouth, VA 23708", phone: "(757) 953-5008", lat: 36.8434, lng: -76.305, categories: ALL_CATEGORIES, notes: "Regional military hospital. Primary MTF for EFMP enrollment updates and specialty referrals.", source: "https://www.tricare.mil/GettingCare/FindDoctor/MTF/Facilities/Naval-Medical-Center-Portsmouth" },
     { id: "p16", baseId: "norfolk", areaId: null, name: "Branch Health Clinic Naval Station Norfolk", kind: "clinic", onBase: true, tricare: "mtf", address: "1721 Admiral Taussig Blvd, Norfolk, VA 23511", phone: "(757) 953-9000", lat: 36.9439, lng: -76.3155, categories: [], notes: "On-base clinic (Sewells Point), Mon-Fri 7am-4pm. Call to confirm pediatric appointments.", source: "https://www.tricare.mil/GettingCare/FindDoctor/MTF/Facilities/Branch-Health-Clinic-Naval-Station-Norfolk" },
@@ -115,8 +115,8 @@ export const PROVIDERS = [
     { id: "p24", baseId: "norfolk", areaId: "nf1", name: "CHKD Mental Health (Children's Pavilion)", kind: "hospital", onBase: false, tricare: "accepted", address: "401 Gresham Dr, Norfolk, VA 23507", phone: "(757) 668-4673", lat: 36.8607, lng: -76.3053, categories: ["ed"], notes: "Inpatient and outpatient child and teen mental health, therapy, and a partial hospitalization program.", source: "https://www.chkd.org/our-care/mental-health-care/" },
     { id: "p25", baseId: "norfolk", areaId: "nf3", name: "CHKD Health Center at Oakbrooke", kind: "therapy", onBase: false, tricare: "accepted", address: "500 Discovery Dr, Chesapeake, VA 23320", phone: "(757) 668-2415", lat: 36.7361, lng: -76.2233, categories: ["sli", "oi", "dd", "md", "tbi", "asd"], notes: "Physical, occupational, and speech therapy; aquatic therapy. Main line (757) 668-2311.", source: "https://www.chkd.org/locations/health-center-at-oakbrooke/" },
     { id: "p26", baseId: "norfolk", areaId: null, name: "CHKD Health and Surgery Center at Concert Drive", kind: "therapy", onBase: false, tricare: "accepted", address: "2021 Concert Dr, Virginia Beach, VA 23456", phone: "(757) 668-2740", lat: 36.777, lng: -76.1005, categories: ["oi", "tbi", "md"], notes: "Physical therapy line listed; main line (757) 668-2711.", source: "https://www.chkd.org/locations/health-and-surgery-center-at-concert-drive/" },
-    { id: "p27", baseId: "norfolk", areaId: "nf3", name: "MySpot - Greenbrier", kind: "therapy", onBase: false, tricare: "accepted", address: "709 Quince Pl, Chesapeake, VA 23320", phone: "(757) 277-9874", lat: 36.7409, lng: -76.2132, categories: ["asd", "sli", "dd", "oi"], notes: "ABA, speech, occupational, physical, and music therapy; diagnostic evaluations.", source: "https://beaminghealth.com/providers/myspot-greenbrier-chesapeake-va" }, // lat/lng is the street (OpenStreetMap)
-    { id: "p28", baseId: "norfolk", areaId: "nf2", name: "MySpot - Kempsville", kind: "therapy", onBase: false, tricare: "accepted", address: "5151 Bonney Rd, Virginia Beach, VA 23462", phone: "(757) 222-1315", lat: 36.8294, lng: -76.1588, categories: ["asd", "sli", "dd", "oi"], notes: "ABA, speech, occupational, physical, and music therapy; diagnostic evaluations.", source: "https://beaminghealth.com/providers/myspot-kempsville-virginia-beach-va" },
+    { id: "p27", baseId: "norfolk", areaId: "nf3", name: "MySpot - Greenbrier", kind: "therapy", onBase: false, tricare: "accepted", address: "709 Quince Pl, Chesapeake, VA 23320", phone: "(757) 277-9874", lat: 36.7409, lng: -76.2132, aba: true, categories: ["asd", "sli", "dd", "oi"], notes: "ABA, speech, occupational, physical, and music therapy; diagnostic evaluations.", source: "https://beaminghealth.com/providers/myspot-greenbrier-chesapeake-va" }, // lat/lng is the street (OpenStreetMap)
+    { id: "p28", baseId: "norfolk", areaId: "nf2", name: "MySpot - Kempsville", kind: "therapy", onBase: false, tricare: "accepted", address: "5151 Bonney Rd, Virginia Beach, VA 23462", phone: "(757) 222-1315", lat: 36.8294, lng: -76.1588, aba: true, categories: ["asd", "sli", "dd", "oi"], notes: "ABA, speech, occupational, physical, and music therapy; diagnostic evaluations.", source: "https://beaminghealth.com/providers/myspot-kempsville-virginia-beach-va" },
     { id: "p29", baseId: "norfolk", areaId: null, name: "The Planning Council (Navy EFMP Respite Care)", kind: "respite", onBase: false, tricare: "efmp", address: "2551 Eltham Ave, Suite I, Norfolk, VA 23513", phone: "(757) 622-9268", lat: 36.8781, lng: -76.2218, categories: ALL_CATEGORIES, notes: "Hires and trains respite caregivers for Navy and Air Force EFMP families in Hampton Roads. Eligibility goes through Child Care Aware: 1-800-424-2246 ext. 317.", source: "https://theplanningcouncil.org/military-family-respite-care/" },
     { id: "p30", baseId: "norfolk", areaId: null, name: "Virginia Dept. for the Blind and Vision Impaired - Norfolk Regional Office", kind: "state", onBase: false, tricare: "free", address: "6325 N Center Dr, Suite 131, Norfolk, VA 23502", phone: "(757) 466-4162", lat: 36.848, lng: -76.1894, categories: ["vi", "db"], notes: "State services for blind, vision impaired, and deafblind residents, including kids.", source: "https://www.dbvi.virginia.gov/staff.htm" },
     { id: "p32", baseId: "norfolk", areaId: null, name: "Sinkinson Dyslexia Foundation", kind: "therapy", onBase: false, tricare: "free", address: "3701 Pacific Ave, Suite 500, Virginia Beach, VA 23451", phone: "(757) 437-0733", lat: 36.865, lng: -75.9808, categories: ["sld"], notes: "Orton-Gillingham dyslexia tutoring, free for low to low-middle income families.", source: "https://sinkinsondyslexiafoundation.org/tutoring" }
@@ -134,80 +134,64 @@ export const CONTACTS = [
     { id: "c8", baseId: null, group: "Deaf-Blindness", name: "Virginia Deafblind Project (VCU)", address: null, phone: "1 (877) 295-7799", website: "https://vadeafblindproject.partnership.vcu.edu/", notes: "Statewide help for families of kids who are deafblind. Office line (804) 828-2052.", source: "https://www.nationaldb.org/state-deaf-blind-projects/va/" }
 ];
 
-export const CHECKLISTS = {
-    everyMove: {
-        title: "Every PCS — do these no matter where you live",
-        items: [
-            "Update {child}'s EFMP enrollment at {base} within 30 days of arrival",
-            "Hand-carry (do not ship) the IEP/504 plan, latest evaluations, and medical records",
-            "Request records transfer from the current school district in writing",
-            "Contact the School Liaison Officer at {base} before choosing a school",
-            "If TRICARE Prime: transfer enrollment region and pick a PCM at {mtf}",
-            "If TRICARE Select: confirm specialty referrals are still authorized in the new region",
-            "Refill all prescriptions for 90 days before the move"
-        ]
-    },
-    efmpPending: {
-        title: "EFMP enrollment is pending",
-        items: [
-            "Follow up on the pending EFMP enrollment packet",
-            "Confirm the provider signed DD Form 2792 / 2792-1",
-            "Verify EFMP enrollment posted before orders are finalized"
-        ]
-    },
-    efmpNotEnrolled: {
-        title: "Not enrolled in EFMP yet",
-        items: [
-            "Schedule an EFMP screening appointment with your MTF",
-            "Complete DD Form 2792 (medical) with {child}'s treating provider",
-            "Complete DD Form 2792-1 (educational) with {child}'s school",
-            "Submit the enrollment packet to the EFMP coordinator",
-            "Meet with EFMP family support after enrollment is approved"
-        ]
-    },
-    publicSchool: {
-        title: "Enrolling in a public school (IEP transfer)",
-        items: [
-            "Submit proof of residence + military orders (districts must enroll immediately under the Interstate Compact)",
-            "Provide the current IEP, the new school must give comparable services while it reviews",
-            "Request an IEP transfer meeting within the first 30 days",
-            "Ask whether {child}'s programs are at this campus or a regional site"
-        ]
-    },
-    privateSchool: {
-        title: "Applying to a private school",
-        items: [
-            "Ask directly what accommodations they can and cannot provide (private schools are not bound by IDEA)",
-            "Submit application + records release form",
-            "Schedule a shadow day / interview for {child}",
-            "Ask about military tuition assistance or state scholarship programs"
-        ]
-    },
-    therapy: {
-        title: "Applying to a therapy provider",
-        items: [
-            "Get a referral from the PCM (required for Prime; smart for Select)",
-            "If ABA: confirm TRICARE Autism Care Demonstration enrollment and a diagnosis letter within 2 years",
-            "Send the provider intro PDF from your profile",
-            "Ask to join the waitlist NOW, good clinics run 4 to 12 weeks out",
-            "Confirm the provider is in network for your plan before the first visit"
-        ]
-    },
-    respite: {
-        title: "Setting up respite care",
-        items: [
-            "Ask the EFMP office at {base} how to request respite hours",
-            "Get on respite provider waitlists before you arrive",
-            "Share {child}'s care routine, meds, and emergency plan with the provider"
-        ]
-    },
-    doctorHospital: {
-        title: "Setting up medical care",
-        items: [
-            "Register {child} at the hospital's pediatric records office",
-            "Transfer specialty referrals through the new regional TRICARE contractor",
-            "Book the developmental pediatrician early — they book out farthest",
-            "Ask the EFMP office which specialists other families use"
-        ]
-    }
+// 7. Checklist tasks. The Checklists tab builds each family's list from these.
+// stage: "pre" (before the move) | "arrival" (first ~30 days) | "onboarding" (after you're settled)
+// days: when it's due, counted from the PCS date (-60 = 60 days before, 14 = 2 weeks after)
+// Only shows up when it matches the family:
+//   plan: "Prime" | "Select"        efmp: "Enrolled" | "Pending" | "Not Enrolled"
+//   respite: true (only if respite care matters to them, 3+ out of 5)
+//   place: "public" | "private" | "provider" | "respite" | "aba" -- repeated for each chosen place of that kind
+// {child}, {base}, {mtf}, {efmpPhone}, {place} get filled in.
+// source: where the rule or advice comes from (checked October 2026).
+const SRC = {
+    efmp: "https://ffr.cnic.navy.mil/Family-Readiness/Fleet-And-Family-Support-Program/Work-and-Family-Life/Exceptional-Family-Member-Program/EFMP-Enrollment-Process/",
+    forms: "https://ffr.cnic.navy.mil/Portals/76/Family_Readiness/Documents/DD%20Form%202792%20Instructions.pdf",
+    pcsGuide: "https://www.mynavyhr.navy.mil/Portals/55/Documents/MyNavy%20HR%20PCS%20Guide%202026.pdf",
+    tricarePcs: "https://tricare.mil/FAQs/general/GEN_pcs",
+    referrals: "https://www.dha.mil/News/2025/08/26/16/22/Unlock-Your-Health-by-Understanding-the-TRICARE-Prime-Referral-Process",
+    compact: "https://www.militaryonesource.mil/education-employment/for-children-youth/interstate-compact-for-military-children/",
+    iepMove: "https://militaryonesource.mil/special-needs/educational-needs/moving-with-an-individualized-education-program",
+    iepLaw: "https://www.ecfr.gov/current/title-34/subtitle-B/chapter-III/part-300/subpart-D/subject-group-ECFR28b07e67452ed7a/section-300.323",
+    slo: "https://www.npsk12.com/departments/interagency-collaboration-and-wraparound-services/support-for-military-connected-students-and-families/naval-station-norfolk-school-liaison-officer-slo-program",
+    autism: "https://www.tricare.mil/autism",
+    respite: "https://theplanningcouncil.org/military-family-respite-care/"
 };
+
+export const CHECKLIST_TASKS = [
+    // Every move
+    { id: "efmp-update", stage: "pre", days: -90, efmp: "Enrolled", title: "Start updating {child}'s EFMP enrollment (the Navy says begin up to 12 months before a PCS)", source: SRC.efmp },
+    { id: "slo", stage: "pre", days: -60, title: "Contact the School Liaison Officer at {base} about schools and IEP services", source: SRC.slo },
+    { id: "records", stage: "pre", days: -45, title: "Get copies of {child}'s school records, IEP or 504 plan, and latest evaluations to hand-carry", source: SRC.iepMove },
+    { id: "referrals", stage: "pre", days: -30, title: "Call your TRICARE contractor to move active referrals to the new region (don't disenroll before you move)", source: SRC.tricarePcs },
+    { id: "refills", stage: "pre", days: -14, title: "Ask {child}'s doctors for enough prescription refills to get through the move" },
+    { id: "binder", stage: "pre", days: -7, title: "Pack a PCS binder to hand-carry: orders, medical and school records, EFMP forms", source: SRC.pcsGuide },
+    { id: "deers", stage: "arrival", days: 3, title: "Update your new home address in DEERS (milConnect or 1-800-538-9552)", source: SRC.tricarePcs },
+    { id: "efmp-checkin", stage: "arrival", days: 7, title: "Check in with the EFMP office at {base}: {efmpPhone}", source: SRC.efmp },
+    { id: "prime-transfer", stage: "arrival", days: 14, plan: "Prime", title: "Transfer TRICARE Prime enrollment and pick a primary care manager at {mtf} (you have 90 days after the move)", source: SRC.tricarePcs },
+    { id: "select-network", stage: "arrival", days: 14, plan: "Select", title: "Update TRICARE Select enrollment and find network providers near your new home (you have 90 days after the move)", source: SRC.tricarePcs },
+    { id: "iep-adopted", stage: "onboarding", days: 45, title: "Check that {child}'s new school has adopted the IEP or scheduled a new IEP meeting", source: SRC.iepLaw },
+    { id: "respite", stage: "onboarding", days: 60, respite: true, title: "Ask the EFMP office about Navy EFMP respite care hours", source: SRC.respite },
+
+    // EFMP still pending
+    { id: "efmp-followup", stage: "pre", days: -75, efmp: "Pending", title: "Follow up with your EFMP coordinator on {child}'s pending enrollment", source: SRC.efmp },
+    { id: "efmp-forms-check", stage: "pre", days: -60, efmp: "Pending", title: "Make sure the doctor finished DD Form 2792 and the school finished DD Form 2792-1", source: SRC.forms },
+
+    // Not enrolled in EFMP yet
+    { id: "efmp-start", stage: "pre", days: -90, efmp: "Not Enrolled", title: "Ask your EFMP coordinator how to enroll {child}", source: SRC.efmp },
+    { id: "dd2792", stage: "pre", days: -75, efmp: "Not Enrolled", title: "Have {child}'s doctor fill out DD Form 2792 (medical summary)", source: SRC.forms },
+    { id: "dd2792-1", stage: "pre", days: -75, efmp: "Not Enrolled", title: "Have {child}'s school fill out DD Form 2792-1 and attach the current IEP", source: SRC.forms },
+    { id: "efmp-submit", stage: "pre", days: -60, efmp: "Not Enrolled", title: "Turn in the EFMP enrollment packet to your EFMP coordinator", source: SRC.efmp },
+
+    // For each place they choose on the map
+    { id: "send-school", stage: "pre", days: -21, place: "public", title: "Send {child}'s records and IEP to {place}", source: SRC.compact },
+    { id: "enroll-public", stage: "arrival", days: 3, place: "public", title: "Enroll at {place} using your hand-carried records (the Interstate Compact allows this)", source: SRC.compact },
+    { id: "comparable", stage: "onboarding", days: 30, place: "public", title: "Ask {place} how they'll provide services comparable to the current IEP until a new one is in place", source: SRC.iepLaw },
+    { id: "private-ask", stage: "pre", days: -60, place: "private", title: "Ask {place} what support they can offer (private schools don't have to follow IEPs)", source: SRC.iepMove },
+    { id: "private-apply", stage: "pre", days: -45, place: "private", title: "Ask {place} about applications, tuition, and a visit day" },
+    { id: "send-private", stage: "pre", days: -21, place: "private", title: "Send {child}'s records to {place}" },
+    { id: "provider-call", stage: "pre", days: -30, place: "provider", title: "Call {place}: ask if they're taking new patients and how long the wait is" },
+    { id: "send-provider", stage: "pre", days: -21, place: "provider", title: "Send records packet to {place}" },
+    { id: "provider-referral", stage: "arrival", days: 10, place: "provider", plan: "Prime", title: "Make sure a referral is on file for {place} (Prime needs referrals for specialty care)", source: SRC.referrals },
+    { id: "aba-referral", stage: "pre", days: -30, place: "aba", title: "For ABA at {place}: ask {child}'s diagnosing provider for an Autism Care Demonstration referral (renewed every 2 years)", source: SRC.autism },
+    { id: "respite-call", stage: "pre", days: -45, place: "respite", title: "Call {place} about Navy EFMP respite care (eligibility: Child Care Aware, 1-800-424-2246 ext. 317)", source: SRC.respite }
+];

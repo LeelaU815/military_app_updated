@@ -7,8 +7,9 @@
 - [x] "choose this location" on the map (card + details page), saved to users/{uid}/savedLocations
 - [x] account button on home (profile + log out)
 - [x] apple-style look for the rest of the app (home, profile wizard, profile, login/sign up) + 7 tabs
-- [ ] checklists (pre-move / arrival / onboarding + EFMP tasks), saved to users/{uid}/checklistProgress
-- [ ] chosen locations show up in contacts + create tasks
+- [x] checklists (pre-move / arrival / onboarding + EFMP tasks, due dates from PCS date, custom tasks), saved to users/{uid}/checklistProgress
+- [x] chosen locations create tasks
+- [ ] chosen locations show up in contacts
 - [ ] contacts screen (verified contacts + chosen places + custom contacts, tap to call)
 - [ ] calendar + alerts (PCS date and EFMP deadlines, color-coded by urgency)
 - [ ] documents checklist (what to gather: IEP, DD 2792, etc.)
