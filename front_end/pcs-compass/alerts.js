@@ -94,8 +94,8 @@ export function buildAlerts(profile, saved = {}, progress = {}, events = [], now
 
 // What the notification settings in the Alerts tab start as. Saved per device (see reminders.js).
 export const DEFAULT_SETTINGS = {
+  reminderTime: '09:00', // when task, all-day appointment, and PCS reminders go off
   tasks: true, // a reminder on each due date
-  taskHour: 9, // at this hour
   dayBefore: false, // and one the day before
   events: true, // appointments
   eventLead: 60, // minutes before a timed appointment
@@ -103,7 +103,14 @@ export const DEFAULT_SETTINGS = {
   badge: true, // red number on the app icon
 };
 
-const LEAD_TEXT = { 15: 'In 15 minutes', 30: 'In 30 minutes', 60: 'In 1 hour', 120: 'In 2 hours', 1440: 'Tomorrow' };
+// 90 -> '1 hour 30 minutes', 1440 -> '1 day'
+export function formatDuration(minutes) {
+  const d = Math.floor(minutes / 1440);
+  const h = Math.floor((minutes % 1440) / 60);
+  const m = minutes % 60;
+  const part = (n, word) => (n ? `${n} ${word}${n === 1 ? '' : 's'}` : null);
+  return [part(d, 'day'), part(h, 'hour'), part(m, 'minute')].filter(Boolean).join(' ') || '0 minutes';
+}
 
 // Phone notifications to schedule: { id, date, title, body, data }. Only future ones, soonest first.
 // iOS only keeps 64 scheduled notifications per app, so this stops at 60.
@@ -114,14 +121,16 @@ export function buildReminders(profile, saved = {}, progress = {}, events = [], 
     d.setHours(hour, minute, 0, 0);
     return d;
   };
+  const [remindHour, remindMinute] = settings.reminderTime.split(':').map(Number);
+  const atReminderTime = (day) => at(day, remindHour, remindMinute);
 
   if (settings.tasks) {
     buildChecklist(profile, saved, progress)
       .filter((t) => !t.done && t.due)
       .forEach((task) => {
-        reminders.push({ id: `task:${task.id}`, date: at(task.due, settings.taskHour), title: 'Due today', body: task.title, data: { tab: 'AlertsTab' } });
+        reminders.push({ id: `task:${task.id}`, date: atReminderTime(task.due), title: 'Due today', body: task.title, data: { tab: 'AlertsTab' } });
         if (settings.dayBefore) {
-          reminders.push({ id: `task-early:${task.id}`, date: at(new Date(task.due.getTime() - DAY), settings.taskHour), title: 'Due tomorrow', body: task.title, data: { tab: 'AlertsTab' } });
+          reminders.push({ id: `task-early:${task.id}`, date: atReminderTime(new Date(task.due.getTime() - DAY)), title: 'Due tomorrow', body: task.title, data: { tab: 'AlertsTab' } });
         }
       });
   }
@@ -135,12 +144,12 @@ export function buildReminders(profile, saved = {}, progress = {}, events = [], 
       reminders.push({
         id: `event:${event.id}`,
         date: new Date(start.getTime() - settings.eventLead * 60000),
-        title: `${LEAD_TEXT[settings.eventLead] || 'Soon'}: ${event.title}`,
+        title: `In ${formatDuration(settings.eventLead)}: ${event.title}`,
         body: [formatTime(event.time), event.location].filter(Boolean).join(' · '),
         data: { tab: 'CalendarTab', date: event.date },
       });
     } else {
-      reminders.push({ id: `event:${event.id}`, date: at(day, 8), title: `Today: ${event.title}`, body: event.location || 'All day', data: { tab: 'CalendarTab', date: event.date } });
+      reminders.push({ id: `event:${event.id}`, date: atReminderTime(day), title: `Today: ${event.title}`, body: event.location || 'All day', data: { tab: 'CalendarTab', date: event.date } });
     }
   });
 
@@ -150,13 +159,13 @@ export function buildReminders(profile, saved = {}, progress = {}, events = [], 
     [30, 14, 7, 1].forEach((days) => {
       reminders.push({
         id: `pcs:${days}`,
-        date: at(new Date(pcs.getTime() - days * DAY), settings.taskHour),
+        date: atReminderTime(new Date(pcs.getTime() - days * DAY)),
         title: `${days} day${days === 1 ? '' : 's'} until ${what}`,
         body: 'Open PCS Compass to see what still needs doing.',
         data: { tab: 'AlertsTab' },
       });
     });
-    reminders.push({ id: 'pcs:0', date: at(pcs, 8), title: profile.pcsDateType === 'Timeframe' ? 'Your PCS window opens today' : 'PCS day is today', body: 'Good luck with the move!', data: { tab: 'AlertsTab' } });
+    reminders.push({ id: 'pcs:0', date: atReminderTime(pcs), title: profile.pcsDateType === 'Timeframe' ? 'Your PCS window opens today' : 'PCS day is today', body: 'Good luck with the move!', data: { tab: 'AlertsTab' } });
   }
 
   return reminders

@@ -1,33 +1,21 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking, Switch } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-import { ALERT_GROUPS } from './alerts';
+import { ALERT_GROUPS, formatDuration } from './alerts';
+import { formatTime } from './calendar';
 import { refreshAlerts, loadNotificationSettings, saveNotificationSettings } from './reminders';
 import { notificationStatus, askForNotifications } from './notifications';
-import ChoiceRow from './components/ChoiceRow';
+import TimeWheel from './components/TimeWheel';
+import DurationWheel from './components/DurationWheel';
 import { COLORS } from './theme';
 
 // Everything that needs attention, grouped like Apple's Reminders: Today, This week, Coming up.
 // Alerts can't be swiped away; they disappear when the task is done or the day has passed.
 
 const GREEN = '#34C759';
-
-const HOURS = [
-  { value: 7, label: '7 AM' },
-  { value: 9, label: '9 AM' },
-  { value: 12, label: 'Noon' },
-  { value: 18, label: '6 PM' },
-];
-const LEADS = [
-  { value: 15, label: '15 min' },
-  { value: 30, label: '30 min' },
-  { value: 60, label: '1 hr' },
-  { value: 120, label: '2 hr' },
-  { value: 1440, label: '1 day' },
-];
 
 // One Settings-style row: colored icon, label, and a switch.
 function SwitchRow({ icon, color, label, value, onChange, border }) {
@@ -38,6 +26,19 @@ function SwitchRow({ icon, color, label, value, onChange, border }) {
       </View>
       <Text style={styles.settingLabel}>{label}</Text>
       <Switch value={value} onValueChange={onChange} trackColor={{ true: GREEN }} />
+    </View>
+  );
+}
+
+// A Settings-style row showing a value (like "9:00 AM") that opens a wheel underneath when tapped.
+function PickerRow({ label, value, open, onPress, children }) {
+  return (
+    <View style={styles.settingBorder}>
+      <TouchableOpacity style={[styles.settingRow, { paddingLeft: 16 }]} onPress={onPress} activeOpacity={0.6}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        <Text style={[styles.settingValue, open && { color: '#FF3B30' }]}>{value}</Text>
+      </TouchableOpacity>
+      {open && <View style={styles.wheel}>{children}</View>}
     </View>
   );
 }
@@ -65,6 +66,8 @@ export default function AlertsScreen({ navigation }) {
   const [alerts, setAlerts] = useState(null); // null = no finished profile yet
   const [permission, setPermission] = useState('unavailable');
   const [settings, setSettings] = useState(null);
+  const [openPicker, setOpenPicker] = useState(null); // 'time' or 'lead'
+  const saveTimer = useRef(null);
 
   const load = async () => {
     const [result, status, s] = await Promise.all([refreshAlerts({ force: true }), notificationStatus(), loadNotificationSettings()]);
@@ -77,7 +80,9 @@ export default function AlertsScreen({ navigation }) {
   const change = (key, value) => {
     const next = { ...settings, [key]: value };
     setSettings(next);
-    saveNotificationSettings(next).catch((error) => console.log(error));
+    // Wait until the wheels stop spinning before rescheduling everything.
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => saveNotificationSettings(next).catch((error) => console.log(error)), 600);
   };
 
   useFocusEffect(
@@ -155,17 +160,31 @@ export default function AlertsScreen({ navigation }) {
         <View>
           <Text style={[styles.sectionHeader, { marginTop: 36 }]}>NOTIFICATION SETTINGS</Text>
           <View style={styles.group}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => setOpenPicker(openPicker === 'time' ? null : 'time')}
+              activeOpacity={0.6}
+            >
+              <View style={[styles.icon, { backgroundColor: '#5856D6' }]}>
+                <Ionicons name="alarm" size={16} color={COLORS.white} />
+              </View>
+              <Text style={styles.settingLabel}>Reminder time</Text>
+              <Text style={[styles.settingValue, openPicker === 'time' && { color: '#FF3B30' }]}>{formatTime(settings.reminderTime)}</Text>
+            </TouchableOpacity>
+            {openPicker === 'time' && (
+              <View style={styles.wheel}>
+                <TimeWheel value={settings.reminderTime} onChange={(v) => change('reminderTime', v)} />
+              </View>
+            )}
+          </View>
+          <Text style={styles.groupFootnote}>For task due dates, all-day appointments, and the PCS countdown.</Text>
+
+          <View style={[styles.group, { marginTop: 20 }]}>
             <SwitchRow icon="checkbox" color="#007AFF" label="Task due dates" value={settings.tasks} onChange={(v) => change('tasks', v)} />
             {settings.tasks && (
-              <View style={styles.settingBorder}>
-                <Text style={styles.settingSub}>Remind me at</Text>
-                <View style={styles.choice}>
-                  <ChoiceRow options={HOURS} selected={settings.taskHour} onSelect={(v) => change('taskHour', v)} />
-                </View>
-                <View style={[styles.settingRow, styles.settingBorder, { paddingLeft: 16 }]}>
-                  <Text style={styles.settingLabel}>Also remind me the day before</Text>
-                  <Switch value={settings.dayBefore} onValueChange={(v) => change('dayBefore', v)} trackColor={{ true: GREEN }} />
-                </View>
+              <View style={[styles.settingRow, styles.settingBorder, { paddingLeft: 16 }]}>
+                <Text style={styles.settingLabel}>Also remind me the day before</Text>
+                <Switch value={settings.dayBefore} onValueChange={(v) => change('dayBefore', v)} trackColor={{ true: GREEN }} />
               </View>
             )}
           </View>
@@ -173,12 +192,14 @@ export default function AlertsScreen({ navigation }) {
           <View style={[styles.group, { marginTop: 16 }]}>
             <SwitchRow icon="time" color="#AF52DE" label="Appointments" value={settings.events} onChange={(v) => change('events', v)} />
             {settings.events && (
-              <View style={styles.settingBorder}>
-                <Text style={styles.settingSub}>How early</Text>
-                <View style={[styles.choice, { paddingBottom: 14 }]}>
-                  <ChoiceRow options={LEADS} selected={settings.eventLead} onSelect={(v) => change('eventLead', v)} />
-                </View>
-              </View>
+              <PickerRow
+                label="Remind me"
+                value={`${formatDuration(settings.eventLead)} before`}
+                open={openPicker === 'lead'}
+                onPress={() => setOpenPicker(openPicker === 'lead' ? null : 'lead')}
+              >
+                <DurationWheel value={settings.eventLead} onChange={(v) => change('eventLead', v)} />
+              </PickerRow>
             )}
           </View>
 
@@ -187,7 +208,7 @@ export default function AlertsScreen({ navigation }) {
             <SwitchRow icon="ellipse" color="#FF9500" label="Badge on app icon" value={settings.badge} onChange={(v) => change('badge', v)} border />
           </View>
           <Text style={styles.footnote}>
-            The PCS countdown reminds you 30, 14, 7, and 1 days before, and on the day. These settings are saved on this device. All-day appointments remind you at 8 AM that day.
+            The PCS countdown reminds you 30, 14, 7, and 1 days before, and on the day. These settings are saved on this device.
           </Text>
         </View>
       )}
@@ -328,16 +349,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.label,
   },
-  settingSub: {
+  settingValue: {
+    fontSize: 16,
+    color: COLORS.secondaryLabel,
+  },
+  wheel: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.separator,
+  },
+  groupFootnote: {
     fontSize: 13,
     color: COLORS.secondaryLabel,
-    marginTop: 10,
-    marginHorizontal: 16,
-  },
-  choice: {
-    marginHorizontal: 12,
-    marginTop: 8,
-    marginBottom: 12,
+    marginTop: 6,
+    marginHorizontal: 32,
   },
   footnote: {
     fontSize: 13,

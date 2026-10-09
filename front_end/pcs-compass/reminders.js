@@ -13,8 +13,11 @@ let lastRun = 0;
 // Notification settings live on this device, since the reminders are scheduled on this device.
 export async function loadNotificationSettings() {
   try {
-    const saved = await AsyncStorage.getItem('notificationSettings');
-    return { ...DEFAULT_SETTINGS, ...(saved ? JSON.parse(saved) : {}) };
+    const saved = JSON.parse((await AsyncStorage.getItem('notificationSettings')) || '{}');
+    // Older versions saved just an hour for task reminders.
+    if (saved.taskHour != null && !saved.reminderTime) saved.reminderTime = `${String(saved.taskHour).padStart(2, '0')}:00`;
+    delete saved.taskHour;
+    return { ...DEFAULT_SETTINGS, ...saved };
   } catch (error) {
     return DEFAULT_SETTINGS;
   }

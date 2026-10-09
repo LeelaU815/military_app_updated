@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -20,6 +19,7 @@ import { parseDate, formatDateKey } from './checklists';
 import { addToDeviceCalendar } from './deviceCalendar';
 import { SCHOOLS, PROVIDERS } from './data';
 import WheelDatePicker from './components/WheelDatePicker';
+import TimeWheel from './components/TimeWheel';
 import { COLORS } from './theme';
 
 // Slides up from Calendar to add or edit an appointment.
@@ -28,20 +28,6 @@ const PURPLE = '#AF52DE';
 const RED = '#FF3B30';
 const thisYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 4 }, (_, i) => thisYear + i);
-const HOURS = Array.from({ length: 12 }, (_, i) => i + 1);
-const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5);
-
-// '14:30' <-> { hour: 2, minute: 30, pm: true }
-function splitTime(time) {
-  if (!time) return { hour: 9, minute: 0, pm: false };
-  const [h, m] = time.split(':').map(Number);
-  return { hour: h % 12 || 12, minute: m, pm: h >= 12 };
-}
-
-function joinTime(hour, minute, pm) {
-  const h = (hour % 12) + (pm ? 12 : 0);
-  return `${String(h).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-}
 
 export default function EventEditorScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
@@ -49,15 +35,12 @@ export default function EventEditorScreen({ navigation, route }) {
   const places = [...SCHOOLS, ...PROVIDERS].filter((p) => (route.params.placeIds || []).includes(p.id));
 
   const startDate = parseDate(existing ? existing.date : route.params.date);
-  const startTime = splitTime(existing ? existing.time : null);
   const [title, setTitle] = useState(existing ? existing.title : '');
   const [month, setMonth] = useState(startDate ? startDate.getMonth() + 1 : null);
   const [day, setDay] = useState(startDate ? startDate.getDate() : null);
   const [year, setYear] = useState(startDate ? startDate.getFullYear() : null);
   const [allDay, setAllDay] = useState(existing ? !existing.time : false);
-  const [hour, setHour] = useState(startTime.hour);
-  const [minute, setMinute] = useState(startTime.minute);
-  const [pm, setPm] = useState(startTime.pm);
+  const [time, setTime] = useState(existing && existing.time ? existing.time : '09:00');
   const [placeId, setPlaceId] = useState(existing ? existing.placeId || null : null);
   const [location, setLocation] = useState(existing ? existing.location || '' : '');
   const [notes, setNotes] = useState(existing ? existing.notes || '' : '');
@@ -86,7 +69,7 @@ export default function EventEditorScreen({ navigation, route }) {
     return {
       title: title.trim(),
       date,
-      time: allDay ? null : joinTime(hour, minute, pm),
+      time: allDay ? null : time,
       placeId,
       location: location.trim(),
       notes: notes.trim(),
@@ -195,17 +178,8 @@ export default function EventEditorScreen({ navigation, route }) {
           </View>
         </View>
         {!allDay && (
-          <View style={styles.timeRow}>
-            <Picker selectedValue={hour} style={styles.picker} itemStyle={styles.pickerItem} onValueChange={setHour}>
-              {HOURS.map((h) => <Picker.Item key={h} label={String(h)} value={h} color={COLORS.label} />)}
-            </Picker>
-            <Picker selectedValue={minute} style={styles.picker} itemStyle={styles.pickerItem} onValueChange={setMinute}>
-              {MINUTES.map((m) => <Picker.Item key={m} label={String(m).padStart(2, '0')} value={m} color={COLORS.label} />)}
-            </Picker>
-            <Picker selectedValue={pm ? 'pm' : 'am'} style={styles.picker} itemStyle={styles.pickerItem} onValueChange={(v) => setPm(v === 'pm')}>
-              <Picker.Item label="AM" value="am" color={COLORS.label} />
-              <Picker.Item label="PM" value="pm" color={COLORS.label} />
-            </Picker>
+          <View style={{ marginTop: 10 }}>
+            <TimeWheel value={time} onChange={setTime} />
           </View>
         )}
 
@@ -328,19 +302,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 17,
     color: COLORS.label,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    marginTop: 10,
-    overflow: 'hidden',
-  },
-  picker: {
-    flex: 1,
-  },
-  pickerItem: {
-    fontSize: 20,
   },
   chips: {
     flexDirection: 'row',
