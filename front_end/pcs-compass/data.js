@@ -198,3 +198,33 @@ export const CHECKLIST_TASKS = [
     { id: "aba-referral", stage: "pre", days: -30, place: "aba", title: "For ABA at {place}: ask {child}'s diagnosing provider for an Autism Care Demonstration referral (renewed every 2 years)", source: SRC.autism, details: "TRICARE's Autism Care Demonstration needs a referral from the provider who diagnosed autism. A new referral is needed every 2 years, and ABA is approved 6 months at a time." },
     { id: "respite-call", stage: "pre", days: -45, place: "respite", title: "Call {place} about Navy EFMP respite care (eligibility: Child Care Aware, 1-800-424-2246 ext. 317)", source: SRC.respite, details: "The Planning Council hires and trains respite caregivers for Navy and Air Force EFMP families in Hampton Roads." }
 ];
+
+// 8. School year dates for the Calendar, only from each district's own calendar or announcement.
+// Norfolk Public Schools isn't here yet -- couldn't find their 2026-27 dates on npsk12.com, only on
+// third-party sites. Chesapeake's last day isn't here for the same reason. Add them once the district posts them.
+export const SCHOOL_CALENDARS = [
+    {
+        district: "Virginia Beach City Public Schools",
+        source: "https://resources.finalsite.net/images/v1757440778/vbschoolscom/ygqsdpeopntec9vlc64r/SY2026_27Cal.pdf",
+        dates: [
+            { date: "2026-08-24", title: "First day of school" },
+            { date: "2026-12-21", end: "2027-01-01", title: "Winter break" },
+            { date: "2027-06-11", title: "Last day of school" }
+        ]
+    },
+    {
+        district: "Chesapeake Public Schools",
+        source: "https://www.cpschools.com/page/back-to-school/",
+        dates: [
+            { date: "2026-09-08", title: "First day of school" }
+        ]
+    },
+    {
+        district: "Portsmouth Public Schools",
+        source: "https://www.ppsk12.us/article/2506576/",
+        dates: [
+            { date: "2026-08-24", title: "First day of school" },
+            { date: "2027-06-11", title: "Last day of school" }
+        ]
+    }
+];

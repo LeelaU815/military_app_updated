@@ -140,6 +140,26 @@ export async function deleteContact(uid, contactId) {
   await deleteDoc(doc(db, 'users', uid, 'contacts', contactId));
 }
 
+// Appointments the family adds to the Calendar, at users/{uid}/events/{eventId}.
+export async function loadEvents(uid) {
+  const snapshot = await getDocs(collection(db, 'users', uid, 'events'));
+  const events = [];
+  snapshot.forEach((d) => events.push({ id: d.id, ...d.data() }));
+  return events;
+}
+
+// fields: { title, date: 'YYYY-MM-DD', time: 'HH:MM' or null for all day, placeId, location, notes }.
+// Pass an id to update an existing event.
+export async function saveEvent(uid, fields, id) {
+  const eventId = id || `event-${Date.now()}`;
+  await setDoc(doc(db, 'users', uid, 'events', eventId), { ...fields, updatedAt: serverTimestamp() }, { merge: true });
+  return eventId;
+}
+
+export async function deleteEvent(uid, eventId) {
+  await deleteDoc(doc(db, 'users', uid, 'events', eventId));
+}
+
 // Turns Firebase error codes into something a parent can act on.
 export function authErrorMessage(error) {
   switch (error && error.code) {

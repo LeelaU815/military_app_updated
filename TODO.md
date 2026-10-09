@@ -11,7 +11,10 @@
 - [x] chosen locations create tasks
 - [x] chosen locations show up in contacts
 - [x] contacts screen (verified contacts + chosen places + custom contacts, tap to call, more resources)
-- [ ] calendar + alerts (PCS date and EFMP deadlines, color-coded by urgency)
+- [x] collapsible stages and topics on checklists
+- [x] calendar (PCS date, task due dates, my appointments in users/{uid}/events, school year dates, add to the Calendar app)
+- [x] "next up" banner on home (next task + today's/tomorrow's appointment)
+- [ ] alerts (EFMP deadlines, color-coded by urgency)
 - [ ] documents checklist (what to gather: IEP, DD 2792, etc.)
 
 ## later
@@ -20,4 +23,5 @@
 - [ ] google places api (address autocomplete, more places, ratings) -- needs billing + a locked-down key
 - [ ] document uploads (firebase storage, may need billing)
 - [ ] data for the other 7 bases
+- [ ] school dates for Norfolk Public Schools + Chesapeake's last day once the districts post them
 - [ ] before android release: free google maps api key (iOS uses apple maps, no key)

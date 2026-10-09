@@ -5,9 +5,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getCurrentUser, loadProfile } from './storage';
+import { getCurrentUser, loadProfile, loadSavedLocations, loadChecklistProgress, loadEvents } from './storage';
 import { MONTH_NAMES, installationName, disabilityLabel, displayAge } from './constants';
 import { estimatedGrade } from './scoring';
+import { buildChecklist, STAGE_STYLE } from './checklists';
+import { dateKey, formatTime, KIND_STYLE } from './calendar';
 import AccountButton from './components/AccountButton';
 import { COLORS } from './theme';
 
@@ -43,6 +45,52 @@ function gradeText(grade) {
   return `${grade}${suffix} grade`;
 }
 
+// The small "what needs doing" banner: the next unfinished task, plus an appointment if one is today or tomorrow.
+function upNext(profile, saved, progress, events) {
+  const rows = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today.getTime() + 86400000);
+
+  const appointment = events
+    .filter((e) => e.date === dateKey(today) || e.date === dateKey(tomorrow))
+    .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))[0];
+  if (appointment) {
+    const when = appointment.date === dateKey(today) ? 'Today' : 'Tomorrow';
+    rows.push({
+      key: 'event',
+      tab: 'CalendarTab',
+      icon: 'time',
+      color: KIND_STYLE.event.color,
+      label: [when, formatTime(appointment.time)].filter(Boolean).join(' · '),
+      title: appointment.title,
+    });
+  }
+
+  const open = buildChecklist(profile, saved, progress).filter((t) => !t.done);
+  const next = open[0];
+  if (next) {
+    const overdue = open.filter((t) => t.due && t.due < today).length;
+    const days = next.due ? Math.round((next.due - today) / 86400000) : null;
+    let label = 'Next up';
+    let color = STAGE_STYLE[next.stage].color;
+    if (overdue) {
+      label = overdue > 1 ? `Overdue · ${overdue} tasks` : 'Overdue';
+      color = '#FF3B30';
+    } else if (days === 0) {
+      label = 'Due today';
+      color = '#FF9500';
+    } else if (days !== null && days <= 7) {
+      label = `Due in ${days} day${days === 1 ? '' : 's'}`;
+      color = '#FF9500';
+    } else if (next.due) {
+      label = `Next up · due ${MONTH_NAMES[next.due.getMonth()].slice(0, 3)} ${next.due.getDate()}`;
+    }
+    rows.push({ key: 'task', tab: 'ChecklistsTab', icon: overdue ? 'alert-circle' : 'checkbox', color, label, title: next.title });
+  }
+  return rows;
+}
+
 const EFMP_COLORS = { Enrolled: '#34C759', Pending: '#FF9500', 'Not Enrolled': '#FF3B30' };
 
 // Five little bars for a 1-5 rating.
@@ -70,6 +118,7 @@ export default function DashboardScreen({ navigation }) {
   const { width } = useWindowDimensions();
   const columns = width >= 768 ? 6 : 3;
   const [profile, setProfile] = useState(null);
+  const [banner, setBanner] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = async () => {
@@ -80,7 +129,14 @@ export default function DashboardScreen({ navigation }) {
         setLoading(false);
         return;
       }
-      setProfile(await loadProfile(currentUser.uid));
+      const [p, saved, progress, events] = await Promise.all([
+        loadProfile(currentUser.uid),
+        loadSavedLocations(currentUser.uid),
+        loadChecklistProgress(currentUser.uid),
+        loadEvents(currentUser.uid),
+      ]);
+      setProfile(p);
+      setBanner(p && p.status === 'complete' ? upNext(p, saved, progress, events) : []);
     } catch (error) {
       console.log(error);
     } finally {
@@ -184,6 +240,28 @@ export default function DashboardScreen({ navigation }) {
           <Text style={styles.heroFallback}>{pcsFallbackMessage}</Text>
         )}
       </LinearGradient>
+
+      {banner.length > 0 && (
+        <View style={styles.banner}>
+          {banner.map((row, i) => (
+            <TouchableOpacity
+              key={row.key}
+              style={[styles.bannerRow, i > 0 && styles.bannerBorder]}
+              onPress={() => navigation.navigate(row.tab)}
+              activeOpacity={0.6}
+            >
+              <View style={[styles.bannerIcon, { backgroundColor: row.color }]}>
+                <Ionicons name={row.icon} size={16} color={COLORS.white} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.bannerLabel, { color: row.color }]}>{row.label.toUpperCase()}</Text>
+                <Text style={styles.bannerTitle} numberOfLines={2}>{row.title}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={17} color={COLORS.tertiaryLabel} />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       <Text style={styles.sectionHeader}>QUICK ACCESS</Text>
       <View style={styles.tiles}>
@@ -352,6 +430,42 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     marginTop: 8,
+  },
+  banner: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 12,
+    overflow: 'hidden',
+  },
+  bannerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  bannerBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.separator,
+  },
+  bannerIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  bannerLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  bannerTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: COLORS.label,
+    marginTop: 2,
   },
   sectionHeader: {
     fontSize: 13,
