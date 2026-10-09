@@ -121,6 +121,25 @@ export async function deleteCustomTask(uid, taskId) {
   await deleteDoc(doc(db, 'users', uid, 'checklistProgress', taskId));
 }
 
+// Contacts the family adds themselves, at users/{uid}/contacts/{contactId}.
+export async function loadContacts(uid) {
+  const snapshot = await getDocs(collection(db, 'users', uid, 'contacts'));
+  const contacts = [];
+  snapshot.forEach((d) => contacts.push({ id: d.id, ...d.data() }));
+  return contacts;
+}
+
+// fields: { name, role, phone, email, notes }. Pass an id to update an existing contact.
+export async function saveContact(uid, fields, id) {
+  const contactId = id || `contact-${Date.now()}`;
+  await setDoc(doc(db, 'users', uid, 'contacts', contactId), { ...fields, updatedAt: serverTimestamp() }, { merge: true });
+  return contactId;
+}
+
+export async function deleteContact(uid, contactId) {
+  await deleteDoc(doc(db, 'users', uid, 'contacts', contactId));
+}
+
 // Turns Firebase error codes into something a parent can act on.
 export function authErrorMessage(error) {
   switch (error && error.code) {

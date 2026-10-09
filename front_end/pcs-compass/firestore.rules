@@ -1,11 +1,56 @@
+// ============================================================
+// PCS Compass — firestore.rules
+// Paste this into Firebase Console -> Firestore Database -> Rules,
+// then click Publish. This is NOT deployed automatically by anything
+// in this project — Firestore ignores a .rules file sitting in your
+// repo unless you either paste it into the console or deploy it via
+// the Firebase CLI (firebase deploy --only firestore:rules), which
+// requires `firebase init` in this folder first. Console paste is
+// the zero-setup path.
+//
+// What this enforces: a signed-in user can only read/write documents
+// under their own /users/{uid} path. Nobody can read another
+// family's profile, saved locations, or checklist progress — not
+// even a logged-in user browsing by guessing a UID.
+// ============================================================
+
 rules_version = '2';
 
-// Paste into Firebase console > Firestore Database > Rules.
-// Each family can only read and write their own profile.
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /savedLocations/{locationId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /checklistProgress/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      match /contacts/{contactId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Flagged/reported listings. Any signed-in user can file a report
+    // about a location (e.g. "this pharmacy closed," "wrong phone
+    // number"). Reports are WRITE-ONLY from the client — nobody can
+    // read others' reports (or their own back) from the app. Until a
+    // real admin review screen exists, read these in the Firebase
+    // Console under Firestore Database -> reports.
+    match /reports/{reportId} {
+      allow create: if request.auth != null && request.resource.data.reportedBy == request.auth.uid;
+      allow read, update, delete: if false;
+    }
+
     match /profiles/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+
+    // Everything else is denied by default in production mode —
+    // that's intentional, not a bug to "fix" by loosening this file.
   }
 }
