@@ -22,20 +22,13 @@ import {
   setTaskDone,
   deleteCustomTask,
 } from './storage';
-import { buildChecklist, groupByTopic, pcsDate, STAGES } from './checklists';
+import { buildChecklist, groupByTopic, pcsDate, STAGES, STAGE_STYLE } from './checklists';
 import { MONTH_NAMES } from './constants';
 import { COLORS } from './theme';
 
 const GREEN = '#34C759';
 const RED = '#FF3B30';
 const ORANGE = '#FF9500';
-
-// Each stage gets its own color and icon so the sections are easy to tell apart.
-const STAGE_STYLE = {
-  pre: { color: '#007AFF', icon: 'cube', blurb: 'Before you move' },
-  arrival: { color: '#FF9500', icon: 'flag', blurb: 'Your first month' },
-  onboarding: { color: '#34C759', icon: 'sparkles', blurb: "Once you're settled" },
-};
 
 const TOPIC_ICONS = {
   efmp: 'heart',
@@ -70,14 +63,23 @@ export default function ChecklistsScreen({ navigation }) {
   const [progress, setProgress] = useState({});
   const [expanded, setExpanded] = useState(null); // task id that's open
   const [showCompleted, setShowCompleted] = useState(false);
+  const [collapsed, setCollapsed] = useState([]); // 'pre' for a whole stage, 'pre:efmp' for one topic
 
-  // Remember the "Show completed" switch on this device.
+  // Remember the "Show completed" switch and folded sections on this device.
   useEffect(() => {
     AsyncStorage.getItem('showCompletedTasks').then((v) => setShowCompleted(v === 'true')).catch(() => {});
+    AsyncStorage.getItem('collapsedTaskSections').then((v) => v && setCollapsed(JSON.parse(v))).catch(() => {});
   }, []);
   const changeShowCompleted = (value) => {
     setShowCompleted(value);
     AsyncStorage.setItem('showCompletedTasks', String(value)).catch(() => {});
+  };
+  const toggleSection = (key) => {
+    setCollapsed((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      AsyncStorage.setItem('collapsedTaskSections', JSON.stringify(next)).catch(() => {});
+      return next;
+    });
   };
 
   useFocusEffect(
@@ -274,9 +276,10 @@ export default function ChecklistsScreen({ navigation }) {
           const open = stageTasks.filter((t) => !t.done);
           const done = stageTasks.filter((t) => t.done);
           const look = STAGE_STYLE[stage.id];
+          const stageClosed = collapsed.includes(stage.id);
           return (
             <View key={stage.id}>
-              <View style={styles.stageHeader}>
+              <TouchableOpacity style={styles.stageHeader} onPress={() => toggleSection(stage.id)} activeOpacity={0.6}>
                 <View style={[styles.stageIcon, { backgroundColor: look.color }]}>
                   <Ionicons name={look.icon} size={18} color={COLORS.white} />
                 </View>
@@ -287,7 +290,8 @@ export default function ChecklistsScreen({ navigation }) {
                 <Text style={[styles.stageCount, { color: look.color }]}>
                   {done.length}/{stageTasks.length}
                 </Text>
-              </View>
+                <Ionicons name={stageClosed ? 'chevron-forward' : 'chevron-down'} size={18} color={COLORS.tertiaryLabel} style={{ marginLeft: 8 }} />
+              </TouchableOpacity>
               <View style={styles.stageTrack}>
                 <View
                   style={[
@@ -296,40 +300,48 @@ export default function ChecklistsScreen({ navigation }) {
                   ]}
                 />
               </View>
-              <View style={[styles.group, { borderTopColor: look.color }]}>
-                {groupByTopic(open).map((group) => (
-                  <View key={group.id}>
-                    <View style={styles.topicRow}>
-                      <Ionicons
-                        name={group.isPlace ? 'location' : TOPIC_ICONS[group.id] || 'ellipse'}
-                        size={14}
-                        color={look.color}
-                        style={{ marginRight: 6 }}
-                      />
-                      <Text style={styles.topic} numberOfLines={1}>{group.label.toUpperCase()}</Text>
-                    </View>
-                    {group.tasks.map((task) => renderTask(task))}
-                  </View>
-                ))}
-                {open.length === 0 && stageTasks.length > 0 && (
-                  <Text style={styles.allDone}>All done here 🎉</Text>
-                )}
+              {!stageClosed && (
+                <View style={[styles.group, { borderTopColor: look.color }]}>
+                  {groupByTopic(open).map((group) => {
+                    const key = `${stage.id}:${group.id}`;
+                    const topicClosed = collapsed.includes(key);
+                    return (
+                      <View key={group.id}>
+                        <TouchableOpacity style={styles.topicRow} onPress={() => toggleSection(key)} activeOpacity={0.6}>
+                          <Ionicons
+                            name={group.isPlace ? 'location' : TOPIC_ICONS[group.id] || 'ellipse'}
+                            size={14}
+                            color={look.color}
+                            style={{ marginRight: 6 }}
+                          />
+                          <Text style={styles.topic} numberOfLines={1}>{group.label.toUpperCase()}</Text>
+                          {topicClosed && <Text style={styles.topicCount}>{group.tasks.length}</Text>}
+                          <Ionicons name={topicClosed ? 'chevron-forward' : 'chevron-down'} size={14} color={COLORS.tertiaryLabel} />
+                        </TouchableOpacity>
+                        {!topicClosed && group.tasks.map((task) => renderTask(task))}
+                      </View>
+                    );
+                  })}
+                  {open.length === 0 && stageTasks.length > 0 && (
+                    <Text style={styles.allDone}>All done here 🎉</Text>
+                  )}
 
-                {showCompleted && done.length > 0 && (
-                  <View>
-                    <View style={styles.topicRow}>
-                      <Ionicons name="checkmark-circle" size={14} color={GREEN} style={{ marginRight: 6 }} />
-                      <Text style={styles.topic}>COMPLETED</Text>
+                  {showCompleted && done.length > 0 && (
+                    <View>
+                      <View style={styles.topicRow}>
+                        <Ionicons name="checkmark-circle" size={14} color={GREEN} style={{ marginRight: 6 }} />
+                        <Text style={styles.topic}>COMPLETED</Text>
+                      </View>
+                      {done.map((task) => renderTask(task))}
                     </View>
-                    {done.map((task) => renderTask(task))}
-                  </View>
-                )}
+                  )}
 
-                <TouchableOpacity style={[styles.addRow, styles.topBorder]} onPress={() => openEditor(stage.id)}>
-                  <Ionicons name="add-circle" size={24} color={COLORS.primary} />
-                  <Text style={styles.addText}>Add task</Text>
-                </TouchableOpacity>
-              </View>
+                  <TouchableOpacity style={[styles.addRow, styles.topBorder]} onPress={() => openEditor(stage.id)}>
+                    <Ionicons name="add-circle" size={24} color={COLORS.primary} />
+                    <Text style={styles.addText}>Add task</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           );
         })}
@@ -460,6 +472,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     color: COLORS.secondaryLabel,
     flex: 1,
+  },
+  topicCount: {
+    fontSize: 13,
+    color: COLORS.tertiaryLabel,
+    marginRight: 6,
   },
   topBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
