@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,9 @@ import {
   StyleSheet,
   Alert,
   Linking,
+  Switch,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,6 +29,21 @@ import { COLORS } from './theme';
 const GREEN = '#34C759';
 const RED = '#FF3B30';
 const ORANGE = '#FF9500';
+
+// Each stage gets its own color and icon so the sections are easy to tell apart.
+const STAGE_STYLE = {
+  pre: { color: '#007AFF', icon: 'cube', blurb: 'Before you move' },
+  arrival: { color: '#FF9500', icon: 'flag', blurb: 'Your first month' },
+  onboarding: { color: '#34C759', icon: 'sparkles', blurb: "Once you're settled" },
+};
+
+const TOPIC_ICONS = {
+  efmp: 'heart',
+  school: 'school',
+  medical: 'medkit',
+  move: 'car',
+  mine: 'ellipsis-horizontal-circle',
+};
 
 function dueText(due) {
   if (!due) return null;
@@ -52,7 +69,16 @@ export default function ChecklistsScreen({ navigation }) {
   const [saved, setSaved] = useState({});
   const [progress, setProgress] = useState({});
   const [expanded, setExpanded] = useState(null); // task id that's open
-  const [showDone, setShowDone] = useState({}); // stage id -> showing completed tasks
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  // Remember the "Show completed" switch on this device.
+  useEffect(() => {
+    AsyncStorage.getItem('showCompletedTasks').then((v) => setShowCompleted(v === 'true')).catch(() => {});
+  }, []);
+  const changeShowCompleted = (value) => {
+    setShowCompleted(value);
+    AsyncStorage.setItem('showCompletedTasks', String(value)).catch(() => {});
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -237,21 +263,49 @@ export default function ChecklistsScreen({ navigation }) {
           <View style={[styles.progressFill, { width: `${tasks.length ? (doneCount / tasks.length) * 100 : 0}%` }]} />
         </View>
 
+        <View style={styles.toggleRow}>
+          <Ionicons name="checkmark-done-circle" size={22} color={GREEN} />
+          <Text style={styles.toggleLabel}>Show completed</Text>
+          <Switch value={showCompleted} onValueChange={changeShowCompleted} trackColor={{ true: GREEN }} />
+        </View>
+
         {STAGES.map((stage) => {
           const stageTasks = tasks.filter((t) => t.stage === stage.id);
           const open = stageTasks.filter((t) => !t.done);
           const done = stageTasks.filter((t) => t.done);
+          const look = STAGE_STYLE[stage.id];
           return (
             <View key={stage.id}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionHeader}>{stage.label.toUpperCase()}</Text>
-                <Text style={styles.sectionCount}>{done.length} of {stageTasks.length}</Text>
+              <View style={styles.stageHeader}>
+                <View style={[styles.stageIcon, { backgroundColor: look.color }]}>
+                  <Ionicons name={look.icon} size={18} color={COLORS.white} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.stageTitle}>{stage.label}</Text>
+                  <Text style={styles.stageBlurb}>{look.blurb}</Text>
+                </View>
+                <Text style={[styles.stageCount, { color: look.color }]}>
+                  {done.length}/{stageTasks.length}
+                </Text>
               </View>
-              <View style={styles.group}>
+              <View style={styles.stageTrack}>
+                <View
+                  style={[
+                    styles.stageFill,
+                    { backgroundColor: look.color, width: `${stageTasks.length ? (done.length / stageTasks.length) * 100 : 0}%` },
+                  ]}
+                />
+              </View>
+              <View style={[styles.group, { borderTopColor: look.color }]}>
                 {groupByTopic(open).map((group) => (
                   <View key={group.id}>
                     <View style={styles.topicRow}>
-                      {group.isPlace && <Ionicons name="location" size={13} color={COLORS.secondaryLabel} style={{ marginRight: 4 }} />}
+                      <Ionicons
+                        name={group.isPlace ? 'location' : TOPIC_ICONS[group.id] || 'ellipse'}
+                        size={14}
+                        color={look.color}
+                        style={{ marginRight: 6 }}
+                      />
                       <Text style={styles.topic} numberOfLines={1}>{group.label.toUpperCase()}</Text>
                     </View>
                     {group.tasks.map((task) => renderTask(task))}
@@ -261,20 +315,15 @@ export default function ChecklistsScreen({ navigation }) {
                   <Text style={styles.allDone}>All done here 🎉</Text>
                 )}
 
-                {done.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.completedRow}
-                    onPress={() => setShowDone((prev) => ({ ...prev, [stage.id]: !prev[stage.id] }))}
-                  >
-                    <Ionicons
-                      name={showDone[stage.id] ? 'chevron-down' : 'chevron-forward'}
-                      size={16}
-                      color={COLORS.secondaryLabel}
-                    />
-                    <Text style={styles.completedText}>Completed ({done.length})</Text>
-                  </TouchableOpacity>
+                {showCompleted && done.length > 0 && (
+                  <View>
+                    <View style={styles.topicRow}>
+                      <Ionicons name="checkmark-circle" size={14} color={GREEN} style={{ marginRight: 6 }} />
+                      <Text style={styles.topic}>COMPLETED</Text>
+                    </View>
+                    {done.map((task) => renderTask(task))}
+                  </View>
                 )}
-                {showDone[stage.id] && done.map((task) => renderTask(task))}
 
                 <TouchableOpacity style={[styles.addRow, styles.topBorder]} onPress={() => openEditor(stage.id)}>
                   <Ionicons name="add-circle" size={24} color={COLORS.primary} />
@@ -350,26 +399,53 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 6,
   },
-  sectionHeaderRow: {
+  stageHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 28,
-    marginBottom: 6,
-    marginHorizontal: 32,
+    alignItems: 'center',
+    marginTop: 32,
+    marginHorizontal: 16,
   },
-  sectionHeader: {
+  stageIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  stageTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: COLORS.label,
+  },
+  stageBlurb: {
     fontSize: 13,
     color: COLORS.secondaryLabel,
+    marginTop: 1,
   },
-  sectionCount: {
-    fontSize: 13,
-    color: COLORS.secondaryLabel,
+  stageCount: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  stageTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.fill,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  stageFill: {
+    height: 4,
+    borderRadius: 2,
   },
   group: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
+    borderRadius: 14,
     marginHorizontal: 16,
     overflow: 'hidden',
+    borderTopWidth: 3,
   },
   topicRow: {
     flexDirection: 'row',
@@ -380,8 +456,8 @@ const styles = StyleSheet.create({
   },
   topic: {
     fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 0.4,
+    fontWeight: '700',
+    letterSpacing: 0.5,
     color: COLORS.secondaryLabel,
     flex: 1,
   },
@@ -469,18 +545,21 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     marginLeft: 5,
   },
-  completedRow: {
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: COLORS.separator,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
-  completedText: {
-    fontSize: 15,
-    color: COLORS.secondaryLabel,
-    marginLeft: 6,
+  toggleLabel: {
+    flex: 1,
+    fontSize: 17,
+    color: COLORS.label,
+    marginLeft: 10,
   },
   allDone: {
     fontSize: 15,
