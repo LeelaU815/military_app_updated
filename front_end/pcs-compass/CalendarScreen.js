@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -41,31 +41,64 @@ const LEGEND = [
   { color: KIND_STYLE.school.color, label: 'School' },
 ];
 
-function DayCell({ date, items, selected, today, onPress }) {
-  if (!date) return <View style={styles.cell} />;
+// Cells grow with the screen. Big cells (iPad) show event names like the iPad Calendar app; small ones show dots.
+function DayCell({ date, items, selected, today, onPress, size }) {
+  const roomy = size >= 70;
+  const height = roomy ? Math.min(size * 0.95, 118) : Math.max(size * 1.05, 52);
+  const circle = roomy ? 32 : Math.min(size * 0.72, 40);
+  if (!date) return <View style={[styles.cell, { width: size, height }]} />;
+  const list = items || [];
   // One dot per kind of thing on that day, max 3.
-  const colors = [...new Set((items || []).map((i) => i.color))].slice(0, 3);
+  const colors = [...new Set(list.map((i) => i.color))].slice(0, 3);
+  const maxLabels = Math.max(1, Math.floor((height - circle - 10) / 17));
+  const shown = list.length > maxLabels ? list.slice(0, maxLabels - 1) : list;
   return (
-    <TouchableOpacity style={styles.cell} onPress={onPress} activeOpacity={0.6}>
-      <View style={[styles.dayCircle, selected && { backgroundColor: today ? RED : COLORS.label }]}>
+    <TouchableOpacity
+      style={[styles.cell, { width: size, height }, roomy && styles.cellRoomy, selected && roomy && styles.cellSelected]}
+      onPress={onPress}
+      activeOpacity={0.6}
+    >
+      <View
+        style={[
+          styles.dayCircle,
+          { width: circle, height: circle, borderRadius: circle / 2 },
+          roomy && { alignSelf: 'flex-end' },
+          (selected || (roomy && today)) && { backgroundColor: today ? RED : COLORS.label },
+        ]}
+      >
         <Text
           style={[
             styles.dayNumber,
+            { fontSize: roomy ? 17 : Math.min(18 + (size - 46) * 0.15, 21) },
             today && { color: RED, fontWeight: '600' },
-            selected && { color: COLORS.white, fontWeight: '600' },
+            (selected || (roomy && today)) && { color: COLORS.white, fontWeight: '600' },
           ]}
         >
           {date.getDate()}
         </Text>
       </View>
-      <View style={styles.dots}>
-        {colors.map((c) => <View key={c} style={[styles.dot, { backgroundColor: c }]} />)}
-      </View>
+      {roomy ? (
+        <View style={styles.labels}>
+          {shown.map((item) => (
+            <View key={item.key} style={[styles.label, { backgroundColor: `${item.color}22` }]}>
+              <View style={[styles.labelBar, { backgroundColor: item.color }]} />
+              <Text style={[styles.labelText, item.done && styles.itemDone]} numberOfLines={1}>{item.title}</Text>
+            </View>
+          ))}
+          {shown.length < list.length && (
+            <Text style={styles.moreText}>{list.length - shown.length} more</Text>
+          )}
+        </View>
+      ) : (
+        <View style={styles.dots}>
+          {colors.map((c) => <View key={c} style={[styles.dot, { backgroundColor: c }]} />)}
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
 
-export default function CalendarScreen({ navigation }) {
+export default function CalendarScreen({ navigation, route }) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isWide = width >= 768;
@@ -78,6 +111,16 @@ export default function CalendarScreen({ navigation }) {
   const [events, setEvents] = useState([]);
   const [month, setMonth] = useState({ year: now.getFullYear(), month: now.getMonth() });
   const [selected, setSelected] = useState(dateKey(now));
+  const [gridWidth, setGridWidth] = useState(width - 32);
+
+  // Alerts and reminders can open the Calendar on a specific day.
+  const jumpTo = route.params && route.params.date;
+  useEffect(() => {
+    if (!jumpTo) return;
+    const d = parseDate(jumpTo);
+    setMonth({ year: d.getFullYear(), month: d.getMonth() });
+    setSelected(jumpTo);
+  }, [jumpTo]);
 
   useFocusEffect(
     useCallback(() => {
@@ -219,7 +262,7 @@ export default function CalendarScreen({ navigation }) {
         <View style={styles.weekRow}>
           {WEEKDAYS.map((d, i) => <Text key={i} style={styles.weekday}>{d}</Text>)}
         </View>
-        <View style={styles.grid}>
+        <View style={styles.grid} onLayout={(e) => setGridWidth(e.nativeEvent.layout.width)}>
           {cells.map((date, i) => {
             const key = date ? dateKey(date) : `blank-${i}`;
             return (
@@ -230,6 +273,7 @@ export default function CalendarScreen({ navigation }) {
                 selected={key === selected}
                 today={key === todayKey}
                 onPress={() => setSelected(key)}
+                size={gridWidth / 7}
               />
             );
           })}
@@ -282,7 +326,7 @@ export default function CalendarScreen({ navigation }) {
       <View style={[styles.screen, { paddingTop: insets.top }]}>
         {header}
         <View style={styles.split}>
-          <ScrollView style={{ flex: 1.2 }} contentContainerStyle={{ paddingBottom: 40 }}>{calendarCard}</ScrollView>
+          <ScrollView style={{ flex: 1.7 }} contentContainerStyle={{ paddingBottom: 40 }}>{calendarCard}</ScrollView>
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>{dayList}</ScrollView>
         </View>
       </View>
@@ -365,13 +409,13 @@ const styles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: 'row',
-    paddingTop: 10,
-    paddingBottom: 4,
+    paddingTop: 12,
+    paddingBottom: 6,
   },
   weekday: {
     width: `${100 / 7}%`,
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.secondaryLabel,
   },
@@ -381,21 +425,50 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   cell: {
-    width: `${100 / 7}%`,
     alignItems: 'center',
     paddingVertical: 4,
-    height: 50,
+  },
+  cellRoomy: {
+    alignItems: 'stretch',
+    paddingHorizontal: 3,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.separator,
+  },
+  cellSelected: {
+    backgroundColor: COLORS.groupedBackground,
   },
   dayCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayNumber: {
-    fontSize: 18,
     color: COLORS.label,
+  },
+  labels: {
+    marginTop: 2,
+    gap: 2,
+  },
+  label: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 4,
+    overflow: 'hidden',
+    height: 15,
+  },
+  labelBar: {
+    width: 3,
+    alignSelf: 'stretch',
+  },
+  labelText: {
+    flex: 1,
+    fontSize: 11,
+    color: COLORS.label,
+    marginLeft: 3,
+  },
+  moreText: {
+    fontSize: 11,
+    color: COLORS.secondaryLabel,
+    marginLeft: 3,
   },
   dots: {
     flexDirection: 'row',

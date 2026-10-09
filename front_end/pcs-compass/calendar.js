@@ -101,6 +101,7 @@ export function buildCalendar(profile, saved = {}, progress = {}, events = []) {
         color: STAGE_STYLE[task.stage].color,
         title: task.title,
         subtitle: task.placeName || null,
+        done: task.done,
         task,
       });
     });
