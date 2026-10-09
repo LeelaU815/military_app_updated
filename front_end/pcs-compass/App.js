@@ -1,4 +1,5 @@
-import { NavigationContainer } from '@react-navigation/native';
+import { useEffect, useState } from 'react';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,10 +21,13 @@ import DocumentsScreen from './DocumentsScreen';
 import CalendarScreen from './CalendarScreen';
 import ContactsScreen from './ContactsScreen';
 import AlertsScreen from './AlertsScreen';
+import { setupNotifications } from './notifications';
+import { refreshAlerts, subscribeToBadge } from './reminders';
 import { COLORS } from './theme';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const navigationRef = createNavigationContainerRef();
 
 // The bottom tab bar. Stays visible while switching between sections.
 const TABS = [
@@ -37,8 +41,12 @@ const TABS = [
 ];
 
 function MainTabs() {
+  const [badge, setBadge] = useState(0);
+  useEffect(() => subscribeToBadge(setBadge), []);
+
   return (
     <Tab.Navigator
+      screenListeners={{ focus: () => refreshAlerts() }}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
@@ -52,15 +60,27 @@ function MainTabs() {
       })}
     >
       {TABS.map((tab) => (
-        <Tab.Screen key={tab.name} name={tab.name} component={tab.component} options={{ tabBarLabel: tab.label }} />
+        <Tab.Screen
+          key={tab.name}
+          name={tab.name}
+          component={tab.component}
+          options={{ tabBarLabel: tab.label, tabBarBadge: tab.name === 'AlertsTab' && badge > 0 ? badge : undefined }}
+        />
       ))}
     </Tab.Navigator>
   );
 }
 
 export default function App() {
+  // Tapping a reminder opens the right tab, but only once someone is logged in.
+  useEffect(() => setupNotifications((data) => {
+    if (!navigationRef.isReady()) return;
+    const inApp = navigationRef.getRootState().routes.some((r) => r.name === 'MainTabs');
+    if (inApp) navigationRef.navigate('MainTabs', { screen: data.tab || 'AlertsTab', params: data.date ? { date: data.date } : undefined });
+  }), []);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{ headerShown: false }}

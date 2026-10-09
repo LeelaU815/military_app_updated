@@ -34,6 +34,12 @@
         {
           "calendarPermission": "PCS Compass adds your move dates and appointments to your calendar."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#173A5E"
+        }
       ]
     ]
   }

@@ -10,6 +10,7 @@ import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, serverTimestamp } 
 
 import { auth, db } from './firebaseConfig';
 import { normalizeProfile } from './constants';
+import { clearReminders } from './notifications';
 
 // All Firebase reads/writes go through here.
 // Accounts live in Firebase Auth; each family's profile is one Firestore doc at profiles/{uid}.
@@ -35,6 +36,7 @@ export async function resetPassword(email) {
 }
 
 export async function logOut() {
+  await clearReminders();
   await signOut(auth);
 }
 
