@@ -10,6 +10,7 @@ import DashboardScreen from './DashboardScreen';
 import ProfileCreationScreen from './ProfileCreationScreen';
 import ProfileScreen from './ProfileScreen';
 import MapScreen from './MapScreen';
+import PlaceDetailsScreen from './PlaceDetailsScreen';
 import ContactsScreen from './ContactsScreen';
 import AlertsScreen from './AlertsScreen';
 import { COLORS } from './theme';
@@ -62,6 +63,7 @@ export default function App() {
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="ProfileCreation" component={ProfileCreationScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="PlaceDetails" component={PlaceDetailsScreen} options={{ presentation: 'modal' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

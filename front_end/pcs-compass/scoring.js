@@ -193,6 +193,7 @@ export function scorePlaces(profile, options = {}) {
       place,
       type: placeType(place),
       score: Math.round(topsis(values, weights) * 100),
+      criteria: values, // 0-1 per criterion, for the "why this score" breakdown
       servesChild: serves,
       forChild: serves !== false && fitsGrade(place, profile),
       reasons,

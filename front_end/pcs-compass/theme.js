@@ -24,4 +24,21 @@ export const COLORS = {
 
   gradientTop: '#1B2A4A',
   gradientBottom: '#0B1220',
+
+  // iOS-style grouped screens (map, details)
+  groupedBackground: '#F2F2F7',
+  separator: '#E5E5EA',
+  label: '#1C1C1E',
+  secondaryLabel: '#6E6E73',
+  tertiaryLabel: '#AEAEB2',
+  fill: '#E9E9EE',
+};
+
+// One color per place type (map pins + labels), from Apple's system palette.
+export const TYPE_COLORS = {
+  'Pediatric Specialists': '#FF3B30',
+  Therapists: '#AF52DE',
+  Schools: '#007AFF',
+  'Respite Care': '#FF9500',
+  'Military Facilities': '#34C759',
 };
