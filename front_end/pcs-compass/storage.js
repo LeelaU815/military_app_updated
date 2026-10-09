@@ -6,7 +6,7 @@ import {
   updateProfile,
   onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore';
 
 import { auth, db } from './firebaseConfig';
 import { normalizeProfile } from './constants';
@@ -57,6 +57,32 @@ export async function loadProfile(uid) {
 // status: 'draft' (saved partway through the wizard) or 'complete'
 export async function saveProfile(uid, profile) {
   await setDoc(doc(db, 'profiles', uid), { ...profile, updatedAt: serverTimestamp() });
+}
+
+// Places the family picked on the map, at users/{uid}/savedLocations/{placeId}
+// (shared with the EFMP Navigator web app, which uses the same users/{uid} path).
+export async function loadSavedLocations(uid) {
+  const snapshot = await getDocs(collection(db, 'users', uid, 'savedLocations'));
+  const saved = {};
+  snapshot.forEach((d) => { saved[d.id] = d.data(); });
+  return saved;
+}
+
+export async function saveLocation(uid, result) {
+  const { place } = result;
+  await setDoc(doc(db, 'users', uid, 'savedLocations', place.id), {
+    placeId: place.id,
+    name: place.name,
+    type: result.type,
+    address: place.address || null,
+    phone: place.phone || null,
+    score: result.score,
+    chosenAt: serverTimestamp(),
+  });
+}
+
+export async function removeLocation(uid, placeId) {
+  await deleteDoc(doc(db, 'users', uid, 'savedLocations', placeId));
 }
 
 // Turns Firebase error codes into something a parent can act on.

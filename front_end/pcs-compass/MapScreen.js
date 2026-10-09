@@ -8,13 +8,14 @@ import {
   FlatList,
   StyleSheet,
   useWindowDimensions,
+  Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 
-import { getCurrentUser, loadProfile } from './storage';
+import { getCurrentUser, loadProfile, loadSavedLocations, saveLocation, removeLocation } from './storage';
 import { findBase } from './constants';
 import { scorePlaces, criteriaWeights, PLACE_TYPES } from './scoring';
 import SegmentedControl from './components/SegmentedControl';
@@ -33,6 +34,8 @@ export default function MapScreen({ navigation }) {
   const [showAll, setShowAll] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState(null);
+  const [uid, setUid] = useState(null);
+  const [chosen, setChosen] = useState({}); // placeId -> saved location
   const mapRef = useRef(null);
   const listRef = useRef(null);
 
@@ -42,6 +45,10 @@ export default function MapScreen({ navigation }) {
         try {
           const user = await getCurrentUser();
           setProfile(user ? await loadProfile(user.uid) : null);
+          if (user) {
+            setUid(user.uid);
+            setChosen(await loadSavedLocations(user.uid));
+          }
         } catch (error) {
           console.log(error);
         } finally {
@@ -98,11 +105,44 @@ export default function MapScreen({ navigation }) {
     }
   };
 
+  const toggleChosen = (result) => {
+    const id = result.place.id;
+    if (chosen[id]) {
+      Alert.alert('Remove from your places?', result.place.name, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeLocation(uid, id);
+              setChosen((prev) => {
+                const next = { ...prev };
+                delete next[id];
+                return next;
+              });
+            } catch (error) {
+              Alert.alert('Error', "Couldn't remove that place. Try again.");
+              console.log(error);
+            }
+          },
+        },
+      ]);
+      return;
+    }
+    saveLocation(uid, result)
+      .then(() => setChosen((prev) => ({ ...prev, [id]: { placeId: id } })))
+      .catch((error) => {
+        Alert.alert('Error', "Couldn't save that place. Try again.");
+        console.log(error);
+      });
+  };
+
   const openDetails = (result) => {
     const weights = criteriaWeights(profile);
     if (!home) delete weights.distance;
     const sameType = results.filter((r) => r.type === result.type).length;
-    navigation.navigate('PlaceDetails', { result, weights, firstName, sameType });
+    navigation.navigate('PlaceDetails', { result, weights, firstName, sameType, chosen: !!chosen[result.place.id] });
   };
 
   if (loading) {
@@ -204,17 +244,24 @@ export default function MapScreen({ navigation }) {
           key={r.place.id}
           coordinate={{ latitude: r.place.lat, longitude: r.place.lng }}
           title={r.place.name}
-          description={`${r.score}% match`}
+          description={`${r.score}% match${chosen[r.place.id] ? ' · Chosen' : ''}`}
           pinColor={TYPE_COLORS[r.type]}
           onPress={() => selectFromMap(r)}
           zIndex={r.place.id === selectedId ? 10 : 1}
-        />
+        >
+          {chosen[r.place.id] && (
+            <View style={[styles.specialPin, { backgroundColor: TYPE_COLORS[r.type] }]}>
+              <Ionicons name="checkmark" size={15} color={COLORS.white} />
+            </View>
+          )}
+        </Marker>
       ))}
     </MapView>
   );
 
   const renderCard = ({ item: r }) => {
     const selected = r.place.id === selectedId;
+    const isChosen = !!chosen[r.place.id];
     return (
       <TouchableOpacity
         activeOpacity={0.7}
@@ -240,10 +287,19 @@ export default function MapScreen({ navigation }) {
             {r.servesChild === false ? `Doesn't list ${firstName}'s needs` : `Not ${firstName}'s grade`}
           </Text>
         )}
-        <TouchableOpacity style={styles.detailsButton} onPress={() => openDetails(r)}>
-          <Text style={styles.detailsText}>Details</Text>
-          <Ionicons name="chevron-forward" size={15} color={COLORS.primary} />
-        </TouchableOpacity>
+        <View style={styles.cardButtons}>
+          <TouchableOpacity style={styles.detailsButton} onPress={() => openDetails(r)}>
+            <Text style={styles.detailsText}>Details</Text>
+            <Ionicons name="chevron-forward" size={15} color={COLORS.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.chooseButton, isChosen && styles.chosenButton]}
+            onPress={() => toggleChosen(r)}
+          >
+            {isChosen && <Ionicons name="checkmark" size={15} color={COLORS.primary} style={{ marginRight: 4 }} />}
+            <Text style={[styles.chooseText, isChosen && styles.chosenText]}>{isChosen ? 'Chosen' : 'Choose'}</Text>
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -440,11 +496,34 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontWeight: '500',
   },
+  cardButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
   detailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginTop: 10,
+  },
+  chooseButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+  },
+  chosenButton: {
+    backgroundColor: COLORS.fill,
+  },
+  chooseText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  chosenText: {
+    color: COLORS.primary,
   },
   detailsText: {
     fontSize: 15,

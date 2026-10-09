@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { getCurrentUser, saveLocation, removeLocation } from './storage';
 
 import { COLORS, TYPE_COLORS } from './theme';
 
@@ -53,6 +56,24 @@ function Row({ label, value, last }) {
 
 export default function PlaceDetailsScreen({ navigation, route }) {
   const { result, weights, firstName, sameType } = route.params;
+  const [chosen, setChosen] = useState(!!route.params.chosen);
+  const [busy, setBusy] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  const toggleChosen = async () => {
+    setBusy(true);
+    try {
+      const user = await getCurrentUser();
+      if (chosen) await removeLocation(user.uid, result.place.id);
+      else await saveLocation(user.uid, result);
+      setChosen(!chosen);
+    } catch (error) {
+      Alert.alert('Error', "Couldn't update your places. Try again.");
+      console.log(error);
+    } finally {
+      setBusy(false);
+    }
+  };
   const { place } = result;
   const isSchool = result.type === 'Schools';
 
@@ -129,6 +150,19 @@ export default function PlaceDetailsScreen({ navigation, route }) {
         )}
         <Text style={styles.footnote}>Distances are straight-line miles. Check with {place.name} that details are current.</Text>
       </ScrollView>
+
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <TouchableOpacity
+          style={[styles.bigButton, chosen && styles.bigButtonChosen]}
+          onPress={toggleChosen}
+          disabled={busy}
+        >
+          {chosen && <Ionicons name="checkmark-circle" size={20} color={COLORS.primary} style={{ marginRight: 6 }} />}
+          <Text style={[styles.bigButtonText, chosen && styles.bigButtonTextChosen]}>
+            {busy ? 'Saving...' : chosen ? 'Chosen · Tap to remove' : 'Choose this location'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -270,6 +304,34 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginHorizontal: 16,
     lineHeight: 18,
+  },
+  bottomBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    backgroundColor: COLORS.groupedBackground,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: COLORS.separator,
+  },
+  bigButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
+    paddingVertical: 16,
+  },
+  bigButtonChosen: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.separator,
+  },
+  bigButtonText: {
+    color: COLORS.white,
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  bigButtonTextChosen: {
+    color: COLORS.primary,
   },
   source: {
     fontSize: 13,

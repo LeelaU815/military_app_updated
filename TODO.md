@@ -4,10 +4,11 @@
 - [x] scoring: TOPSIS ranking of schools and providers (fixed ideal, grade filter, "for my kid" filter)
 - [x] scoring: look up the home address's coordinates when the profile is saved (U.S. Census geocoder) so "distance from house" works
 - [x] map & discovery screen (map pins, type tabs, "for my kid" vs "show all" toggle, details)
-- [ ] "choose this location" on the map, saved to users/{uid}/savedLocations
+- [x] "choose this location" on the map (card + details page), saved to users/{uid}/savedLocations
 - [x] account button on home (profile + log out)
+- [ ] apple-style look for the rest of the app (home, profile wizard, profile, login/sign up)
 - [ ] checklists (pre-move / arrival / onboarding + EFMP tasks), saved to users/{uid}/checklistProgress
-- [ ] chosen locations saved to users/{uid}/savedLocations, added to contacts + tasks
+- [ ] chosen locations show up in contacts + create tasks
 - [ ] contacts screen (verified contacts + chosen places + custom contacts, tap to call)
 - [ ] calendar + alerts (PCS date and EFMP deadlines, color-coded by urgency)
 - [ ] documents checklist (what to gather: IEP, DD 2792, etc.)
