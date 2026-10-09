@@ -18,13 +18,6 @@ export const STAGES = [
   { id: 'onboarding', label: 'Onboarding' },
 ];
 
-// Each stage gets its own color and icon so the sections are easy to tell apart (Calendar uses the colors too).
-export const STAGE_STYLE = {
-  pre: { color: '#007AFF', icon: 'cube', blurb: 'Before you move' },
-  arrival: { color: '#FF9500', icon: 'flag', blurb: 'Your first month' },
-  onboarding: { color: '#34C759', icon: 'sparkles', blurb: "Once you're settled" },
-};
-
 // PCS date (or the start of their PCS window). null if they picked "Not sure".
 export function pcsDate(profile) {
   if (profile.pcsDateType === 'Date' && profile.pcsYear) {

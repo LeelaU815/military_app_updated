@@ -22,10 +22,10 @@ import {
   setTaskDone,
 } from './storage';
 import { buildCalendar, monthGrid, dateKey, KIND_STYLE } from './calendar';
-import { STAGES, STAGE_STYLE, parseDate } from './checklists';
+import { STAGES, parseDate } from './checklists';
 import { addToDeviceCalendar } from './deviceCalendar';
 import { MONTH_NAMES } from './constants';
-import { COLORS } from './theme';
+import { COLORS, STAGE_STYLE } from './theme';
 
 // Month view like Apple's Calendar app: dots under each day, and the selected day's list below
 // (or beside it on iPad).

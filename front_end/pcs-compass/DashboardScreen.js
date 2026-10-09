@@ -8,10 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getCurrentUser, loadProfile, loadSavedLocations, loadChecklistProgress, loadEvents } from './storage';
 import { MONTH_NAMES, installationName, disabilityLabel, displayAge } from './constants';
 import { estimatedGrade } from './scoring';
-import { buildChecklist, STAGE_STYLE } from './checklists';
+import { buildChecklist } from './checklists';
 import { dateKey, formatTime, KIND_STYLE } from './calendar';
 import AccountButton from './components/AccountButton';
-import { COLORS } from './theme';
+import { COLORS, STAGE_STYLE } from './theme';
 
 // Settings-style shortcuts to each tab (icon colors from Apple's system palette).
 const QUICK_ACTIONS = [

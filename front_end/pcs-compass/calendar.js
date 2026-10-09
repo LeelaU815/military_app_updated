@@ -1,6 +1,7 @@
 import { SCHOOL_CALENDARS, SCHOOLS, AREAS } from './data';
 import { findBase } from './constants';
-import { buildChecklist, pcsDate, parseDate, formatDateKey, STAGE_STYLE } from './checklists';
+import { buildChecklist, pcsDate, parseDate, formatDateKey } from './checklists';
+import { STAGE_STYLE } from './theme';
 
 // Builds everything the Calendar shows: the PCS date, checklist due dates, the family's own
 // appointments, and school year dates. Everything is keyed by 'YYYY-MM-DD'.

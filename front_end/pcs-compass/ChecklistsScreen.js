@@ -22,9 +22,9 @@ import {
   setTaskDone,
   deleteCustomTask,
 } from './storage';
-import { buildChecklist, groupByTopic, pcsDate, STAGES, STAGE_STYLE } from './checklists';
+import { buildChecklist, groupByTopic, pcsDate, STAGES } from './checklists';
 import { MONTH_NAMES } from './constants';
-import { COLORS } from './theme';
+import { COLORS, STAGE_STYLE } from './theme';
 
 const GREEN = '#34C759';
 const RED = '#FF3B30';

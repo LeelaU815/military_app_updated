@@ -42,3 +42,10 @@ export const TYPE_COLORS = {
   'Respite Care': '#FF9500',
   'Military Facilities': '#34C759',
 };
+
+// Each stage gets its own color and icon so the sections are easy to tell apart (Checklists, Calendar, and the Home banner all use these).
+export const STAGE_STYLE = {
+  pre: { color: '#007AFF', icon: 'cube', blurb: 'Before you move' },
+  arrival: { color: '#FF9500', icon: 'flag', blurb: 'Your first month' },
+  onboarding: { color: '#34C759', icon: 'sparkles', blurb: "Once you're settled" },
+};
