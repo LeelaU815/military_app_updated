@@ -16,6 +16,10 @@
 - [x] "next up" banner on home (next task + today's/tomorrow's appointment)
 - [x] alerts (overdue / due soon / appointments / PCS countdown, color-coded by urgency) + real reminders on the device, badge on the tab
 - [x] documents: store photos and PDFs on the device in folders (military, school, medical, other), view, share, suggested names
+- [x] app icon, splash screen, runs on the iPad as its own app
+- [ ] move the place/contact/task data from data.js into Firebase (read-only) so new data doesn't need an app update
+- [ ] delete account button (Apple requires it)
+- [ ] app store prep: apple developer account, privacy policy, screenshots, TestFlight with a few families
 
 ## later
 - [ ] reviews from other families (ratings + wait times) -- could use the existing `reports` collection pattern
